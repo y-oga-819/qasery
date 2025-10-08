@@ -1,0 +1,14 @@
+{
+  "name": "qasery",
+  "version": "0.1.0",
+  "description": "An open-source IDE for Qase",
+  "type": "module",
+  "scripts": {
+    "dev": "npm run tauri dev",
+    "build": "npm run tauri build",
+    "tauri": "tauri"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.0.0"
+  }
+}
