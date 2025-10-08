@@ -98,6 +98,29 @@ pub struct TestCase {
     pub is_deleted: bool,
 }
 
+/// テストケースステップ
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TestCaseStep {
+    /// ステップID（ローカルDB用）
+    pub id: i64,
+    /// 所属するテストケースID
+    pub test_case_id: i64,
+    /// ステップハッシュ（Qase API）
+    pub hash: String,
+    /// Shared StepハッシュID（参照している場合）
+    pub shared_step_hash: Option<String>,
+    /// 表示順序
+    pub position: i32,
+    /// アクション（実行内容）
+    pub action: String,
+    /// 期待される結果
+    pub expected_result: Option<String>,
+    /// データ（入力データなど）
+    pub data: Option<String>,
+    /// 親ステップID（ネストされたステップ用）
+    pub parent_step_id: Option<i64>,
+}
+
 /// ローカルとリモートの変更を追跡するための同期状態
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
