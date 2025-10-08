@@ -58,4 +58,31 @@ mod tests {
         assert_eq!(project.sync_status, SyncStatus::Clean);
         assert_eq!(project.is_deleted, false);
     }
+
+    #[test]
+    fn test_test_suite_creation() {
+        // TestSuiteを作成できることを確認
+        let now = chrono::Utc::now();
+        let test_suite = TestSuite {
+            id: 1,
+            project_code: "TEST".to_string(),
+            title: "Test Suite".to_string(),
+            description: Some("Test Description".to_string()),
+            preconditions: None,
+            parent_id: None,
+            position: 1,
+            cases_count: 0,
+            created_at: now,
+            updated_at: now,
+            local_updated_at: now,
+            remote_updated_at: None,
+            sync_status: SyncStatus::Clean,
+            is_deleted: false,
+        };
+
+        assert_eq!(test_suite.id, 1);
+        assert_eq!(test_suite.project_code, "TEST");
+        assert_eq!(test_suite.title, "Test Suite");
+        assert_eq!(test_suite.position, 1);
+    }
 }
