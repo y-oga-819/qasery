@@ -1,6 +1,26 @@
 // エンティティ定義 (Project, TestSuite, TestCase, SharedStep)
 
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
+
+/// プロジェクト
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Project {
+    /// プロジェクトコード (2-10文字の識別子)
+    pub code: String,
+    /// プロジェクト名
+    pub title: String,
+    /// 説明
+    pub description: Option<String>,
+    /// ローカル更新日時
+    pub local_updated_at: DateTime<Utc>,
+    /// リモート更新日時（前回同期時）
+    pub remote_updated_at: Option<DateTime<Utc>>,
+    /// 同期状態
+    pub sync_status: SyncStatus,
+    /// 削除フラグ
+    pub is_deleted: bool,
+}
 
 /// ローカルとリモートの変更を追跡するための同期状態
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
