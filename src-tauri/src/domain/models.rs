@@ -193,4 +193,25 @@ mod tests {
         assert_eq!(test_case.title, "Test Case");
         assert_eq!(test_case.suite_id, Some(1));
     }
+
+    #[test]
+    fn test_test_case_step_creation() {
+        // TestCaseStepを作成できることを確認
+        let step = TestCaseStep {
+            id: 1,
+            test_case_id: 1,
+            hash: "test_hash".to_string(),
+            shared_step_hash: None,
+            position: 1,
+            action: "テストアクション".to_string(),
+            expected_result: Some("期待される結果".to_string()),
+            data: None,
+            parent_step_id: None,
+        };
+
+        assert_eq!(step.id, 1);
+        assert_eq!(step.test_case_id, 1);
+        assert_eq!(step.action, "テストアクション");
+        assert_eq!(step.position, 1);
+    }
 }
