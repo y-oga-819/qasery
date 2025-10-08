@@ -1,7 +1,7 @@
 // SQLite database implementation, repository trait implementation
 
 use anyhow::{Context, Result};
-use rusqlite::{Connection, params};
+use rusqlite::{params, Connection};
 use std::path::Path;
 use std::sync::{Arc, Mutex};
 
@@ -19,8 +19,7 @@ impl Database {
     /// # Arguments
     /// * `path` - データベースファイルのパス（":memory:" でインメモリDB）
     pub fn new<P: AsRef<Path>>(path: P) -> Result<Self> {
-        let conn = Connection::open(path)
-            .context("データベース接続の初期化に失敗しました")?;
+        let conn = Connection::open(path).context("データベース接続の初期化に失敗しました")?;
 
         let db = Database {
             conn: Arc::new(Mutex::new(conn)),
@@ -48,7 +47,8 @@ impl Database {
                 is_deleted INTEGER NOT NULL DEFAULT 0
             )",
             [],
-        ).context("projectsテーブルの作成に失敗しました")?;
+        )
+        .context("projectsテーブルの作成に失敗しました")?;
 
         // test_suitesテーブル
         conn.execute(
@@ -71,7 +71,8 @@ impl Database {
                 FOREIGN KEY (parent_id) REFERENCES test_suites(id)
             )",
             [],
-        ).context("test_suitesテーブルの作成に失敗しました")?;
+        )
+        .context("test_suitesテーブルの作成に失敗しました")?;
 
         // test_casesテーブル
         conn.execute(
@@ -99,7 +100,8 @@ impl Database {
                 FOREIGN KEY (suite_id) REFERENCES test_suites(id)
             )",
             [],
-        ).context("test_casesテーブルの作成に失敗しました")?;
+        )
+        .context("test_casesテーブルの作成に失敗しました")?;
 
         // test_case_stepsテーブル
         conn.execute(
@@ -117,7 +119,8 @@ impl Database {
                 FOREIGN KEY (parent_step_id) REFERENCES test_case_steps(id)
             )",
             [],
-        ).context("test_case_stepsテーブルの作成に失敗しました")?;
+        )
+        .context("test_case_stepsテーブルの作成に失敗しました")?;
 
         // インデックスの作成
         conn.execute(
@@ -147,25 +150,27 @@ impl ProjectRepository for Database {
              WHERE is_deleted = 0"
         )?;
 
-        let projects = stmt.query_map([], |row| {
-            Ok(Project {
-                code: row.get(0)?,
-                title: row.get(1)?,
-                description: row.get(2)?,
-                local_updated_at: row.get::<_, String>(3)?.parse().unwrap(),
-                remote_updated_at: row.get::<_, Option<String>>(4)?
-                    .and_then(|s| s.parse().ok()),
-                sync_status: match row.get::<_, String>(5)?.as_str() {
-                    "clean" => SyncStatus::Clean,
-                    "local_modified" => SyncStatus::LocalModified,
-                    "remote_modified" => SyncStatus::RemoteModified,
-                    "conflict" => SyncStatus::Conflict,
-                    _ => SyncStatus::Clean,
-                },
-                is_deleted: row.get(6)?,
-            })
-        })?
-        .collect::<Result<Vec<_>, _>>()?;
+        let projects = stmt
+            .query_map([], |row| {
+                Ok(Project {
+                    code: row.get(0)?,
+                    title: row.get(1)?,
+                    description: row.get(2)?,
+                    local_updated_at: row.get::<_, String>(3)?.parse().unwrap(),
+                    remote_updated_at: row
+                        .get::<_, Option<String>>(4)?
+                        .and_then(|s| s.parse().ok()),
+                    sync_status: match row.get::<_, String>(5)?.as_str() {
+                        "clean" => SyncStatus::Clean,
+                        "local_modified" => SyncStatus::LocalModified,
+                        "remote_modified" => SyncStatus::RemoteModified,
+                        "conflict" => SyncStatus::Conflict,
+                        _ => SyncStatus::Clean,
+                    },
+                    is_deleted: row.get(6)?,
+                })
+            })?
+            .collect::<Result<Vec<_>, _>>()?;
 
         Ok(projects)
     }
@@ -184,7 +189,8 @@ impl ProjectRepository for Database {
                 title: row.get(1)?,
                 description: row.get(2)?,
                 local_updated_at: row.get::<_, String>(3)?.parse().unwrap(),
-                remote_updated_at: row.get::<_, Option<String>>(4)?
+                remote_updated_at: row
+                    .get::<_, Option<String>>(4)?
                     .and_then(|s| s.parse().ok()),
                 sync_status: match row.get::<_, String>(5)?.as_str() {
                     "clean" => SyncStatus::Clean,
@@ -235,10 +241,7 @@ impl ProjectRepository for Database {
     fn delete(&self, code: &str) -> Result<()> {
         let conn = self.conn.lock().unwrap();
 
-        conn.execute(
-            "UPDATE projects SET is_deleted = 1 WHERE code = ?",
-            [code],
-        )?;
+        conn.execute("UPDATE projects SET is_deleted = 1 WHERE code = ?", [code])?;
 
         Ok(())
     }
@@ -256,32 +259,34 @@ impl TestSuiteRepository for Database {
              ORDER BY position"
         )?;
 
-        let suites = stmt.query_map([project_code], |row| {
-            Ok(TestSuite {
-                id: row.get(0)?,
-                project_code: row.get(1)?,
-                title: row.get(2)?,
-                description: row.get(3)?,
-                preconditions: row.get(4)?,
-                parent_id: row.get(5)?,
-                position: row.get(6)?,
-                cases_count: row.get(7)?,
-                created_at: row.get::<_, String>(8)?.parse().unwrap(),
-                updated_at: row.get::<_, String>(9)?.parse().unwrap(),
-                local_updated_at: row.get::<_, String>(10)?.parse().unwrap(),
-                remote_updated_at: row.get::<_, Option<String>>(11)?
-                    .and_then(|s| s.parse().ok()),
-                sync_status: match row.get::<_, String>(12)?.as_str() {
-                    "clean" => SyncStatus::Clean,
-                    "local_modified" => SyncStatus::LocalModified,
-                    "remote_modified" => SyncStatus::RemoteModified,
-                    "conflict" => SyncStatus::Conflict,
-                    _ => SyncStatus::Clean,
-                },
-                is_deleted: row.get(13)?,
-            })
-        })?
-        .collect::<Result<Vec<_>, _>>()?;
+        let suites = stmt
+            .query_map([project_code], |row| {
+                Ok(TestSuite {
+                    id: row.get(0)?,
+                    project_code: row.get(1)?,
+                    title: row.get(2)?,
+                    description: row.get(3)?,
+                    preconditions: row.get(4)?,
+                    parent_id: row.get(5)?,
+                    position: row.get(6)?,
+                    cases_count: row.get(7)?,
+                    created_at: row.get::<_, String>(8)?.parse().unwrap(),
+                    updated_at: row.get::<_, String>(9)?.parse().unwrap(),
+                    local_updated_at: row.get::<_, String>(10)?.parse().unwrap(),
+                    remote_updated_at: row
+                        .get::<_, Option<String>>(11)?
+                        .and_then(|s| s.parse().ok()),
+                    sync_status: match row.get::<_, String>(12)?.as_str() {
+                        "clean" => SyncStatus::Clean,
+                        "local_modified" => SyncStatus::LocalModified,
+                        "remote_modified" => SyncStatus::RemoteModified,
+                        "conflict" => SyncStatus::Conflict,
+                        _ => SyncStatus::Clean,
+                    },
+                    is_deleted: row.get(13)?,
+                })
+            })?
+            .collect::<Result<Vec<_>, _>>()?;
 
         Ok(suites)
     }
@@ -308,7 +313,8 @@ impl TestSuiteRepository for Database {
                 created_at: row.get::<_, String>(8)?.parse().unwrap(),
                 updated_at: row.get::<_, String>(9)?.parse().unwrap(),
                 local_updated_at: row.get::<_, String>(10)?.parse().unwrap(),
-                remote_updated_at: row.get::<_, Option<String>>(11)?
+                remote_updated_at: row
+                    .get::<_, Option<String>>(11)?
                     .and_then(|s| s.parse().ok()),
                 sync_status: match row.get::<_, String>(12)?.as_str() {
                     "clean" => SyncStatus::Clean,
@@ -367,10 +373,7 @@ impl TestSuiteRepository for Database {
     fn delete(&self, id: i64) -> Result<()> {
         let conn = self.conn.lock().unwrap();
 
-        conn.execute(
-            "UPDATE test_suites SET is_deleted = 1 WHERE id = ?",
-            [id],
-        )?;
+        conn.execute("UPDATE test_suites SET is_deleted = 1 WHERE id = ?", [id])?;
 
         Ok(())
     }
@@ -388,37 +391,39 @@ impl TestCaseRepository for Database {
              WHERE suite_id = ? AND is_deleted = 0"
         )?;
 
-        let cases = stmt.query_map([suite_id], |row| {
-            Ok(TestCase {
-                id: row.get(0)?,
-                project_code: row.get(1)?,
-                suite_id: row.get(2)?,
-                title: row.get(3)?,
-                description: row.get(4)?,
-                preconditions: row.get(5)?,
-                postconditions: row.get(6)?,
-                severity: row.get(7)?,
-                priority: row.get(8)?,
-                test_type: row.get(9)?,
-                status: row.get(10)?,
-                automation: row.get(11)?,
-                author_id: row.get(12)?,
-                created_at: row.get::<_, String>(13)?.parse().unwrap(),
-                updated_at: row.get::<_, String>(14)?.parse().unwrap(),
-                local_updated_at: row.get::<_, String>(15)?.parse().unwrap(),
-                remote_updated_at: row.get::<_, Option<String>>(16)?
-                    .and_then(|s| s.parse().ok()),
-                sync_status: match row.get::<_, String>(17)?.as_str() {
-                    "clean" => SyncStatus::Clean,
-                    "local_modified" => SyncStatus::LocalModified,
-                    "remote_modified" => SyncStatus::RemoteModified,
-                    "conflict" => SyncStatus::Conflict,
-                    _ => SyncStatus::Clean,
-                },
-                is_deleted: row.get(18)?,
-            })
-        })?
-        .collect::<Result<Vec<_>, _>>()?;
+        let cases = stmt
+            .query_map([suite_id], |row| {
+                Ok(TestCase {
+                    id: row.get(0)?,
+                    project_code: row.get(1)?,
+                    suite_id: row.get(2)?,
+                    title: row.get(3)?,
+                    description: row.get(4)?,
+                    preconditions: row.get(5)?,
+                    postconditions: row.get(6)?,
+                    severity: row.get(7)?,
+                    priority: row.get(8)?,
+                    test_type: row.get(9)?,
+                    status: row.get(10)?,
+                    automation: row.get(11)?,
+                    author_id: row.get(12)?,
+                    created_at: row.get::<_, String>(13)?.parse().unwrap(),
+                    updated_at: row.get::<_, String>(14)?.parse().unwrap(),
+                    local_updated_at: row.get::<_, String>(15)?.parse().unwrap(),
+                    remote_updated_at: row
+                        .get::<_, Option<String>>(16)?
+                        .and_then(|s| s.parse().ok()),
+                    sync_status: match row.get::<_, String>(17)?.as_str() {
+                        "clean" => SyncStatus::Clean,
+                        "local_modified" => SyncStatus::LocalModified,
+                        "remote_modified" => SyncStatus::RemoteModified,
+                        "conflict" => SyncStatus::Conflict,
+                        _ => SyncStatus::Clean,
+                    },
+                    is_deleted: row.get(18)?,
+                })
+            })?
+            .collect::<Result<Vec<_>, _>>()?;
 
         Ok(cases)
     }
@@ -451,7 +456,8 @@ impl TestCaseRepository for Database {
                 created_at: row.get::<_, String>(13)?.parse().unwrap(),
                 updated_at: row.get::<_, String>(14)?.parse().unwrap(),
                 local_updated_at: row.get::<_, String>(15)?.parse().unwrap(),
-                remote_updated_at: row.get::<_, Option<String>>(16)?
+                remote_updated_at: row
+                    .get::<_, Option<String>>(16)?
                     .and_then(|s| s.parse().ok()),
                 sync_status: match row.get::<_, String>(17)?.as_str() {
                     "clean" => SyncStatus::Clean,
@@ -504,7 +510,10 @@ impl TestCaseRepository for Database {
                 test_case.created_at.to_rfc3339(),
                 test_case.updated_at.to_rfc3339(),
                 test_case.local_updated_at.to_rfc3339(),
-                test_case.remote_updated_at.as_ref().map(|dt| dt.to_rfc3339()),
+                test_case
+                    .remote_updated_at
+                    .as_ref()
+                    .map(|dt| dt.to_rfc3339()),
                 sync_status_str,
                 test_case.is_deleted,
             ],
@@ -516,10 +525,7 @@ impl TestCaseRepository for Database {
     fn delete(&self, id: i64) -> Result<()> {
         let conn = self.conn.lock().unwrap();
 
-        conn.execute(
-            "UPDATE test_cases SET is_deleted = 1 WHERE id = ?",
-            [id],
-        )?;
+        conn.execute("UPDATE test_cases SET is_deleted = 1 WHERE id = ?", [id])?;
 
         Ok(())
     }
@@ -533,20 +539,21 @@ impl TestCaseRepository for Database {
              ORDER BY position"
         )?;
 
-        let steps = stmt.query_map([test_case_id], |row| {
-            Ok(TestCaseStep {
-                id: row.get(0)?,
-                test_case_id: row.get(1)?,
-                hash: row.get(2)?,
-                shared_step_hash: row.get(3)?,
-                position: row.get(4)?,
-                action: row.get(5)?,
-                expected_result: row.get(6)?,
-                data: row.get(7)?,
-                parent_step_id: row.get(8)?,
-            })
-        })?
-        .collect::<Result<Vec<_>, _>>()?;
+        let steps = stmt
+            .query_map([test_case_id], |row| {
+                Ok(TestCaseStep {
+                    id: row.get(0)?,
+                    test_case_id: row.get(1)?,
+                    hash: row.get(2)?,
+                    shared_step_hash: row.get(3)?,
+                    position: row.get(4)?,
+                    action: row.get(5)?,
+                    expected_result: row.get(6)?,
+                    data: row.get(7)?,
+                    parent_step_id: row.get(8)?,
+                })
+            })?
+            .collect::<Result<Vec<_>, _>>()?;
 
         Ok(steps)
     }
