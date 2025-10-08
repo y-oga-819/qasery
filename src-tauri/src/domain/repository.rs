@@ -1,5 +1,8 @@
 // Repository traits (interfaces) for data persistence
 
+// Phase 1実装時点ではまだ使用されていないが、将来のPhaseで使用するため許可
+#![allow(dead_code)]
+
 use super::models::{Project, TestCase, TestCaseStep, TestSuite};
 use anyhow::Result;
 

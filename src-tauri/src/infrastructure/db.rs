@@ -1,5 +1,8 @@
 // SQLite database implementation, repository trait implementation
 
+// Phase 1実装時点ではまだ使用されていないが、将来のPhaseで使用するため許可
+#![allow(dead_code)]
+
 use anyhow::{Context, Result};
 use rusqlite::{params, Connection};
 use std::path::Path;
