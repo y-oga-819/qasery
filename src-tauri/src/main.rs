@@ -1,8 +1,8 @@
 // Prevents additional console window on Windows in release
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-mod domain;
 mod application;
+mod domain;
 mod infrastructure;
 mod presentation;
 

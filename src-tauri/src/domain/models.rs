@@ -1,5 +1,8 @@
 // エンティティ定義 (Project, TestSuite, TestCase, SharedStep)
 
+// Phase 1実装時点ではまだ使用されていないが、将来のPhaseで使用するため許可
+#![allow(dead_code)]
+
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
@@ -155,7 +158,7 @@ mod tests {
         assert_eq!(project.code, "TEST");
         assert_eq!(project.title, "Test Project");
         assert_eq!(project.sync_status, SyncStatus::Clean);
-        assert_eq!(project.is_deleted, false);
+        assert!(!project.is_deleted);
     }
 
     #[test]
