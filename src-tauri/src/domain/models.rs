@@ -118,4 +118,36 @@ mod tests {
         assert_eq!(test_suite.title, "Test Suite");
         assert_eq!(test_suite.position, 1);
     }
+
+    #[test]
+    fn test_test_case_creation() {
+        // TestCaseを作成できることを確認
+        let now = chrono::Utc::now();
+        let test_case = TestCase {
+            id: 1,
+            project_code: "TEST".to_string(),
+            suite_id: Some(1),
+            title: "Test Case".to_string(),
+            description: Some("Test Description".to_string()),
+            preconditions: None,
+            postconditions: None,
+            severity: 1,
+            priority: 1,
+            test_type: 1,
+            status: 1,
+            automation: 0,
+            author_id: Some(1),
+            created_at: now,
+            updated_at: now,
+            local_updated_at: now,
+            remote_updated_at: None,
+            sync_status: SyncStatus::Clean,
+            is_deleted: false,
+        };
+
+        assert_eq!(test_case.id, 1);
+        assert_eq!(test_case.project_code, "TEST");
+        assert_eq!(test_case.title, "Test Case");
+        assert_eq!(test_case.suite_id, Some(1));
+    }
 }
