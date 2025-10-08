@@ -4,7 +4,40 @@
 
 ## 開発の基本ルール
 
-### 1. ブランチ戦略
+### 1. コーディング規約
+
+#### コメントは日本語で記述
+- **必須**: すべてのコメント（行コメント、ドキュメントコメント）は日本語で記述する
+- コード自体は英語（変数名、関数名、型名など）
+- READMEなどのドキュメントも日本語
+
+**良い例:**
+```rust
+/// ユーザー情報を取得する
+///
+/// # Arguments
+/// * `user_id` - ユーザーID
+///
+/// # Returns
+/// ユーザー情報またはエラー
+pub fn get_user(user_id: i64) -> Result<User, Error> {
+    // データベースから取得
+    let user = db.query_user(user_id)?;
+    Ok(user)
+}
+```
+
+**悪い例:**
+```rust
+/// Get user information
+pub fn get_user(user_id: i64) -> Result<User, Error> {
+    // Fetch from database
+    let user = db.query_user(user_id)?;
+    Ok(user)
+}
+```
+
+### 2. ブランチ戦略
 
 #### ブランチ命名規則
 ```
@@ -33,7 +66,7 @@ git checkout -b feature/project-repository
 # 3. 作業開始
 ```
 
-### 2. TDD（テスト駆動開発）の手法
+### 3. TDD（テスト駆動開発）の手法
 
 #### t_wadaのTDDサイクル
 ```
@@ -89,7 +122,7 @@ impl ProjectRepository {
 3. **リファクタリング**: テストが通ったら改善
 4. **継続的な実行**: テストを頻繁に実行
 
-### 3. コミット戦略
+### 4. コミット戦略
 
 #### コミットの粒度
 - **超細かく**: 1つの変更 = 1コミット
@@ -116,17 +149,17 @@ impl ProjectRepository {
 ##### 例
 ```bash
 # Red
-git commit -m "test: add failing test for project creation"
+git commit -m "test: プロジェクト作成の失敗するテストを追加"
 
 # Green
-git commit -m "feat: implement basic project creation"
+git commit -m "feat: プロジェクト作成の基本実装"
 
 # Refactor
-git commit -m "refactor: extract validation logic"
+git commit -m "refactor: バリデーションロジックを抽出"
 
 # その他
-git commit -m "chore: add rusqlite dependency"
-git commit -m "docs: update README with setup instructions"
+git commit -m "chore: rusqlite依存関係を追加"
+git commit -m "docs: READMEにセットアップ手順を追加"
 ```
 
 #### コミット前のチェック
@@ -155,7 +188,7 @@ touch backend/tests/project_repository_test.rs
 ```
 ```bash
 git add .
-git commit -m "chore: add files for project repository"
+git commit -m "chore: プロジェクトリポジトリ用ファイルを追加"
 ```
 
 #### Step 3: TDDサイクル開始
@@ -176,7 +209,7 @@ fn test_get_all_returns_empty_list() {
 ```bash
 cargo test  # 失敗を確認
 git add tests/project_repository_test.rs
-git commit -m "test: add failing test for get_all returns empty list"
+git commit -m "test: get_allが空リストを返すテストを追加（失敗）"
 ```
 
 **Green**
@@ -197,7 +230,7 @@ impl ProjectRepository {
 ```bash
 cargo test  # 成功を確認
 git add src/domain/repository.rs
-git commit -m "feat: implement get_all to return empty list"
+git commit -m "feat: get_allを実装して空リストを返す"
 ```
 
 **Refactor**（必要に応じて）
@@ -210,7 +243,7 @@ pub fn get_all(&self) -> Result<Vec<Project>, Error> {
 ```bash
 cargo test  # 成功を確認
 git add src/domain/repository.rs
-git commit -m "refactor: extract get_all logic to fetch_all_from_db"
+git commit -m "refactor: get_allのロジックをfetch_all_from_dbに抽出"
 ```
 
 ##### Cycle 2: get_by_code()の実装
@@ -226,7 +259,7 @@ fn test_get_by_code_returns_project() {
 ```
 ```bash
 cargo test  # 失敗を確認
-git commit -am "test: add failing test for get_by_code"
+git commit -am "test: get_by_codeの失敗するテストを追加"
 ```
 
 **Green → Refactor → 繰り返し**
