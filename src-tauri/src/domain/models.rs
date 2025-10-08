@@ -22,6 +22,39 @@ pub struct Project {
     pub is_deleted: bool,
 }
 
+/// テストスイート
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TestSuite {
+    /// テストスイートID
+    pub id: i64,
+    /// プロジェクトコード
+    pub project_code: String,
+    /// テストスイート名
+    pub title: String,
+    /// 説明
+    pub description: Option<String>,
+    /// 事前条件
+    pub preconditions: Option<String>,
+    /// 親テストスイートID（階層構造）
+    pub parent_id: Option<i64>,
+    /// 表示順序
+    pub position: i32,
+    /// このスイート内のテストケース数
+    pub cases_count: i32,
+    /// 作成日時（Qase API）
+    pub created_at: DateTime<Utc>,
+    /// 更新日時（Qase API）
+    pub updated_at: DateTime<Utc>,
+    /// ローカル更新日時
+    pub local_updated_at: DateTime<Utc>,
+    /// リモート更新日時（前回同期時）
+    pub remote_updated_at: Option<DateTime<Utc>>,
+    /// 同期状態
+    pub sync_status: SyncStatus,
+    /// 削除フラグ
+    pub is_deleted: bool,
+}
+
 /// ローカルとリモートの変更を追跡するための同期状態
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
