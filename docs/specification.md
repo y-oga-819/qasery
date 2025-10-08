@@ -132,7 +132,269 @@ qasery/
 
 ## 2. データモデル設計
 
-（次のセクションで詳細化予定）
+### 2.1 Qase APIエンティティ
+
+Qase API v1から取得する主要エンティティ：
+
+#### Project
+```
+- code: string (2-10文字、プロジェクトの識別子)
+- title: string
+- description: string
+```
+
+#### TestSuite
+```
+- id: int64
+- title: string
+- description: string | null
+- preconditions: string | null
+- parent_id: int64 | null (階層構造をサポート)
+- position: integer (表示順序)
+- cases_count: integer (このスイート内のテストケース数)
+- created_at: datetime
+- updated_at: datetime
+```
+
+#### TestCase
+```
+- id: int64
+- title: string
+- description: string | null
+- preconditions: string | null
+- postconditions: string | null
+- suite_id: int64 | null (所属するテストスイート)
+- severity: integer
+- priority: integer
+- type: integer
+- status: integer
+- automation: integer
+- steps: array of Step
+  - hash: string
+  - shared_step_hash: string | null (shared stepへの参照)
+  - action: string
+  - expected_result: string | null
+  - data: string | null
+  - position: integer
+  - steps: array (ネストされたステップ)
+- author_id: int64
+- created_at: datetime
+- updated_at: datetime
+```
+
+#### SharedStep
+```
+- hash: string (ID)
+- title: string
+- action: string
+- expected_result: string
+- steps: array of Step (ネストされたステップ)
+- cases: array of int64 (このshared stepを使用しているテストケースのIDリスト)
+- cases_count: integer (使用されているテストケース数)
+- created_at: datetime
+- updated_at: datetime
+```
+
+### 2.2 ローカルDBスキーマ（SQLite）
+
+Qase APIのデータをローカルで管理するためのテーブル設計：
+
+#### projects テーブル
+```sql
+CREATE TABLE projects (
+    code TEXT PRIMARY KEY,
+    title TEXT NOT NULL,
+    description TEXT,
+    -- 同期管理用
+    local_updated_at DATETIME NOT NULL,
+    remote_updated_at DATETIME,
+    sync_status TEXT NOT NULL DEFAULT 'clean', -- clean, local_modified, remote_modified, conflict
+    is_deleted BOOLEAN NOT NULL DEFAULT 0
+);
+```
+
+#### test_suites テーブル
+```sql
+CREATE TABLE test_suites (
+    id INTEGER PRIMARY KEY,
+    project_code TEXT NOT NULL,
+    title TEXT NOT NULL,
+    description TEXT,
+    preconditions TEXT,
+    parent_id INTEGER,
+    position INTEGER NOT NULL,
+    cases_count INTEGER NOT NULL DEFAULT 0,
+    -- Qase API フィールド
+    created_at DATETIME NOT NULL,
+    updated_at DATETIME NOT NULL,
+    -- 同期管理用
+    local_updated_at DATETIME NOT NULL,
+    remote_updated_at DATETIME,
+    sync_status TEXT NOT NULL DEFAULT 'clean',
+    is_deleted BOOLEAN NOT NULL DEFAULT 0,
+    FOREIGN KEY (project_code) REFERENCES projects(code) ON DELETE CASCADE,
+    FOREIGN KEY (parent_id) REFERENCES test_suites(id) ON DELETE SET NULL
+);
+```
+
+#### test_cases テーブル
+```sql
+CREATE TABLE test_cases (
+    id INTEGER PRIMARY KEY,
+    project_code TEXT NOT NULL,
+    suite_id INTEGER,
+    title TEXT NOT NULL,
+    description TEXT,
+    preconditions TEXT,
+    postconditions TEXT,
+    severity INTEGER,
+    priority INTEGER,
+    type INTEGER,
+    status INTEGER,
+    automation INTEGER,
+    author_id INTEGER,
+    -- Qase API フィールド
+    created_at DATETIME NOT NULL,
+    updated_at DATETIME NOT NULL,
+    -- 同期管理用
+    local_updated_at DATETIME NOT NULL,
+    remote_updated_at DATETIME,
+    sync_status TEXT NOT NULL DEFAULT 'clean',
+    is_deleted BOOLEAN NOT NULL DEFAULT 0,
+    FOREIGN KEY (project_code) REFERENCES projects(code) ON DELETE CASCADE,
+    FOREIGN KEY (suite_id) REFERENCES test_suites(id) ON DELETE SET NULL
+);
+```
+
+#### test_case_steps テーブル
+```sql
+CREATE TABLE test_case_steps (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    test_case_id INTEGER NOT NULL,
+    hash TEXT NOT NULL,
+    shared_step_hash TEXT,
+    position INTEGER NOT NULL,
+    action TEXT NOT NULL,
+    expected_result TEXT,
+    data TEXT,
+    parent_step_id INTEGER, -- ネストされたステップ用
+    FOREIGN KEY (test_case_id) REFERENCES test_cases(id) ON DELETE CASCADE,
+    FOREIGN KEY (shared_step_hash) REFERENCES shared_steps(hash) ON DELETE SET NULL,
+    FOREIGN KEY (parent_step_id) REFERENCES test_case_steps(id) ON DELETE CASCADE
+);
+```
+
+#### shared_steps テーブル
+```sql
+CREATE TABLE shared_steps (
+    hash TEXT PRIMARY KEY,
+    project_code TEXT NOT NULL,
+    title TEXT NOT NULL,
+    action TEXT NOT NULL,
+    expected_result TEXT NOT NULL,
+    cases_count INTEGER NOT NULL DEFAULT 0,
+    -- Qase API フィールド
+    created_at DATETIME NOT NULL,
+    updated_at DATETIME NOT NULL,
+    -- 同期管理用
+    local_updated_at DATETIME NOT NULL,
+    remote_updated_at DATETIME,
+    sync_status TEXT NOT NULL DEFAULT 'clean',
+    is_deleted BOOLEAN NOT NULL DEFAULT 0,
+    FOREIGN KEY (project_code) REFERENCES projects(code) ON DELETE CASCADE
+);
+```
+
+#### shared_step_steps テーブル
+```sql
+CREATE TABLE shared_step_steps (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    shared_step_hash TEXT NOT NULL,
+    hash TEXT NOT NULL,
+    position INTEGER NOT NULL,
+    action TEXT NOT NULL,
+    expected_result TEXT,
+    data TEXT,
+    parent_step_id INTEGER, -- ネストされたステップ用
+    FOREIGN KEY (shared_step_hash) REFERENCES shared_steps(hash) ON DELETE CASCADE,
+    FOREIGN KEY (parent_step_id) REFERENCES shared_step_steps(id) ON DELETE CASCADE
+);
+```
+
+#### shared_step_usage テーブル（使用状況を管理）
+```sql
+CREATE TABLE shared_step_usage (
+    shared_step_hash TEXT NOT NULL,
+    test_case_id INTEGER NOT NULL,
+    PRIMARY KEY (shared_step_hash, test_case_id),
+    FOREIGN KEY (shared_step_hash) REFERENCES shared_steps(hash) ON DELETE CASCADE,
+    FOREIGN KEY (test_case_id) REFERENCES test_cases(id) ON DELETE CASCADE
+);
+```
+
+### 2.3 同期状態管理
+
+#### sync_status の値
+- `clean`: ローカルとリモートが同期している
+- `local_modified`: ローカルで変更されている（リモートへの反映待ち）
+- `remote_modified`: リモートで変更されている（ローカルへの取り込み待ち）
+- `conflict`: ローカルとリモートの両方で変更されている（マージ作業が必要）
+
+#### 同期フロー
+1. **Qaseからデータ取り込み**:
+   - APIから全データをフェッチ
+   - `updated_at` を比較してローカルとリモートの差分を検出
+   - `sync_status` を更新
+
+2. **Qaseへデータ反映**:
+   - `sync_status = 'local_modified'` のレコードを抽出
+   - Qase APIを呼び出して更新
+   - 成功したら `sync_status = 'clean'` に更新
+
+3. **コンフリクト解決**:
+   - `sync_status = 'conflict'` のレコードを表示
+   - ユーザーが「ローカルを優先」「リモートを優先」「手動マージ」を選択
+
+### 2.4 エンティティ間リレーション
+
+```
+Project (1) ─── (N) TestSuite
+                    │
+                    ├── parent_id (self-reference for hierarchy)
+                    │
+                    └─── (N) TestCase
+                              │
+                              └─── (N) TestCaseStep
+                                        │
+                                        └── shared_step_hash ──> SharedStep
+                                                                      │
+                                                                      └─── (N) SharedStepUsage
+```
+
+### 2.5 型定義の共有（Rust ↔ TypeScript）
+
+Rustの構造体を`serde`でシリアライズし、TypeScript側で対応する型を定義することで型安全性を確保。
+
+**Rust側（backend/src/domain/models.rs）**:
+```rust
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct TestCase {
+    pub id: i64,
+    pub title: String,
+    pub description: Option<String>,
+    // ...
+}
+```
+
+**TypeScript側（frontend/src/types/index.ts）**:
+```typescript
+export interface TestCase {
+  id: number;
+  title: string;
+  description: string | null;
+  // ...
+}
+```
 
 ## 3. アーキテクチャ設計
 
