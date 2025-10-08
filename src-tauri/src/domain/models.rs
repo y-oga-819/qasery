@@ -55,6 +55,49 @@ pub struct TestSuite {
     pub is_deleted: bool,
 }
 
+/// テストケース
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TestCase {
+    /// テストケースID
+    pub id: i64,
+    /// プロジェクトコード
+    pub project_code: String,
+    /// 所属するテストスイートID
+    pub suite_id: Option<i64>,
+    /// テストケース名
+    pub title: String,
+    /// 説明
+    pub description: Option<String>,
+    /// 事前条件
+    pub preconditions: Option<String>,
+    /// 事後条件
+    pub postconditions: Option<String>,
+    /// 重要度
+    pub severity: i32,
+    /// 優先度
+    pub priority: i32,
+    /// テストタイプ
+    pub test_type: i32,
+    /// ステータス
+    pub status: i32,
+    /// 自動化レベル
+    pub automation: i32,
+    /// 作成者ID
+    pub author_id: Option<i64>,
+    /// 作成日時（Qase API）
+    pub created_at: DateTime<Utc>,
+    /// 更新日時（Qase API）
+    pub updated_at: DateTime<Utc>,
+    /// ローカル更新日時
+    pub local_updated_at: DateTime<Utc>,
+    /// リモート更新日時（前回同期時）
+    pub remote_updated_at: Option<DateTime<Utc>>,
+    /// 同期状態
+    pub sync_status: SyncStatus,
+    /// 削除フラグ
+    pub is_deleted: bool,
+}
+
 /// ローカルとリモートの変更を追跡するための同期状態
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
