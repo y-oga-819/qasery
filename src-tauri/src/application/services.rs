@@ -29,6 +29,17 @@ impl ProjectService {
     pub fn list_projects(&self) -> Result<Vec<Project>> {
         self.repository.get_all()
     }
+
+    /// プロジェクトを取得
+    ///
+    /// # Arguments
+    /// * `code` - プロジェクトコード
+    ///
+    /// # Returns
+    /// プロジェクトまたはエラー
+    pub fn get_project(&self, code: &str) -> Result<Option<Project>> {
+        self.repository.get_by_code(code)
+    }
 }
 
 #[cfg(test)]
@@ -76,5 +87,17 @@ mod tests {
 
         assert!(result.is_ok());
         assert_eq!(result.unwrap().len(), 0);
+    }
+
+    #[test]
+    fn test_get_project_returns_none_when_not_found() {
+        // プロジェクトが存在しない場合、Noneが返る
+        let repository = Arc::new(MockProjectRepository::new());
+        let service = ProjectService::new(repository);
+
+        let result = service.get_project("DEMO");
+
+        assert!(result.is_ok());
+        assert!(result.unwrap().is_none());
     }
 }
