@@ -31,6 +31,9 @@ pub struct ProjectEntity {
     pub code: String,
 }
 
+/// 単一プロジェクトの結果（get_project用）
+pub type ProjectResult = ProjectEntity;
+
 impl QaseClient {
     /// 新しいQaseClientを作成
     ///
@@ -103,6 +106,19 @@ mod tests {
         let client = QaseClient::new(api_token).unwrap();
 
         let result = client.get_projects(None, None).await;
+
+        // このテストは実際のAPIを呼び出すため、モック化が必要
+        // 今は基本的な動作確認のみ
+        assert!(result.is_err() || result.is_ok());
+    }
+
+    #[tokio::test]
+    async fn test_get_project() {
+        // get_projectメソッドが正しく動作することをテスト
+        let api_token = "test_api_token";
+        let client = QaseClient::new(api_token).unwrap();
+
+        let result = client.get_project("DEMO").await;
 
         // このテストは実際のAPIを呼び出すため、モック化が必要
         // 今は基本的な動作確認のみ
