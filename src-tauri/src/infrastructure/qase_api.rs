@@ -45,6 +45,42 @@ impl QaseClient {
             base_url: "https://api.qase.io/v1".to_string(),
         })
     }
+
+    /// 全プロジェクトを取得
+    ///
+    /// # Arguments
+    /// * `limit` - 取得件数 (1-100, デフォルト: 10)
+    /// * `offset` - スキップ件数 (0-100000, デフォルト: 0)
+    ///
+    /// # Returns
+    /// プロジェクト一覧またはエラー
+    pub async fn get_projects(
+        &self,
+        limit: Option<i32>,
+        offset: Option<i32>,
+    ) -> Result<QaseResponse<ProjectsResult>> {
+        let client = reqwest::Client::new();
+        let url = format!("{}/project", self.base_url);
+
+        let mut query_params = vec![];
+        if let Some(l) = limit {
+            query_params.push(("limit", l.to_string()));
+        }
+        if let Some(o) = offset {
+            query_params.push(("offset", o.to_string()));
+        }
+
+        let response = client
+            .get(&url)
+            .header("Token", &self.api_token)
+            .header("accept", "application/json")
+            .query(&query_params)
+            .send()
+            .await?;
+
+        let result: QaseResponse<ProjectsResult> = response.json().await?;
+        Ok(result)
+    }
 }
 
 #[cfg(test)]
