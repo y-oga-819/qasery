@@ -122,6 +122,258 @@ impl ProjectRepository {
 3. **リファクタリング**: テストが通ったら改善
 4. **継続的な実行**: テストを頻繁に実行
 
+#### ⚠️ TDDでよくある失敗パターン
+
+##### 失敗例: 一度のGreenフェーズで完全実装してしまう
+
+**❌ 悪い例（Qase API Clientでの実際の失敗）:**
+```rust
+// Red: get_projects()が存在しないテスト
+#[tokio::test]
+async fn test_get_projects() {
+    let client = QaseClient::new("token").unwrap();
+    let result = client.get_projects(None, None).await;
+    assert!(result.is_ok());
+}
+
+// Green: いきなり完全な実装を書いてしまう
+pub async fn get_projects(&self, limit: Option<i32>, offset: Option<i32>)
+    -> Result<QaseResponse<ProjectsResult>> {
+    let client = reqwest::Client::new();
+    let url = format!("{}/project", self.base_url);
+    let mut query_params = vec![];
+    if let Some(l) = limit {
+        query_params.push(("limit", l.to_string()));
+    }
+    if let Some(o) = offset {
+        query_params.push(("offset", o.to_string()));
+    }
+    let response = client.get(&url)
+        .header("Token", &self.api_token)
+        .query(&query_params)
+        .send()
+        .await?;
+    let result: QaseResponse<ProjectsResult> = response.json().await?;
+    Ok(result)
+}
+```
+
+**問題点:**
+- 一度に多くの機能を実装（HTTP通信、パラメータ処理、JSONパース）
+- テストが意味のないアサーション（`assert!(result.is_ok())`）になっている
+- デバッグが困難（どこで問題が起きているか分からない）
+- TDDの「小さいステップ」という原則に反している
+
+##### ✅ 正しい例: 段階的に実装する
+
+**Step 1: まず固定値を返す（最小限の実装）**
+```rust
+// Red: 固定値を期待するテスト
+#[test]
+fn test_get_projects_returns_response() {
+    let client = QaseClient::new("token").unwrap();
+    let result = client.get_projects_sync(); // 同期版で開始
+
+    assert!(result.is_ok());
+    let response = result.unwrap();
+    assert_eq!(response.status, true);
+    assert_eq!(response.result.total, 0);
+}
+
+// Green: 固定値を返す
+pub fn get_projects_sync(&self) -> Result<QaseResponse<ProjectsResult>> {
+    Ok(QaseResponse {
+        status: true,
+        result: ProjectsResult {
+            total: 0,
+            filtered: 0,
+            count: 0,
+            entities: vec![],
+        }
+    })
+}
+```
+```bash
+cargo test
+git commit -m "feat: get_projectsの固定値実装（Green）"
+```
+
+**Step 2: 非同期化する**
+```rust
+// Red: 非同期版のテスト
+#[tokio::test]
+async fn test_get_projects_async() {
+    let client = QaseClient::new("token").unwrap();
+    let result = client.get_projects().await; // asyncに変更
+
+    assert!(result.is_ok());
+}
+
+// Green: async化
+pub async fn get_projects(&self) -> Result<QaseResponse<ProjectsResult>> {
+    Ok(QaseResponse {
+        status: true,
+        result: ProjectsResult {
+            total: 0,
+            filtered: 0,
+            count: 0,
+            entities: vec![],
+        }
+    })
+}
+```
+```bash
+cargo test
+git commit -m "feat: get_projectsを非同期化（Green）"
+```
+
+**Step 3: モックサーバーを使ったHTTP通信**
+```rust
+// Red: モックサーバーでHTTP通信をテスト
+#[tokio::test]
+async fn test_get_projects_makes_http_request() {
+    let mock_server = MockServer::start().await;
+    Mock::given(method("GET"))
+        .and(path("/project"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+            "status": true,
+            "result": {
+                "total": 1,
+                "filtered": 1,
+                "count": 1,
+                "entities": []
+            }
+        })))
+        .mount(&mock_server)
+        .await;
+
+    let client = QaseClient::new_with_base_url("token", &mock_server.uri());
+    let result = client.get_projects().await;
+
+    assert!(result.is_ok());
+    let response = result.unwrap();
+    assert_eq!(response.result.total, 1);
+}
+
+// Green: 実際のHTTP通信を実装
+pub async fn get_projects(&self) -> Result<QaseResponse<ProjectsResult>> {
+    let client = reqwest::Client::new();
+    let response = client
+        .get(&format!("{}/project", self.base_url))
+        .header("Token", &self.api_token)
+        .send()
+        .await?;
+    let result: QaseResponse<ProjectsResult> = response.json().await?;
+    Ok(result)
+}
+```
+```bash
+cargo test
+git commit -m "feat: get_projectsでHTTP通信を実装（Green）"
+```
+
+**Step 4: limitパラメータを追加**
+```rust
+// Red: limitパラメータのテスト
+#[tokio::test]
+async fn test_get_projects_with_limit() {
+    let mock_server = MockServer::start().await;
+    Mock::given(method("GET"))
+        .and(path("/project"))
+        .and(query_param("limit", "10"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+            "status": true,
+            "result": {
+                "total": 1,
+                "filtered": 1,
+                "count": 1,
+                "entities": []
+            }
+        })))
+        .mount(&mock_server)
+        .await;
+
+    let client = QaseClient::new_with_base_url("token", &mock_server.uri());
+    let result = client.get_projects(Some(10), None).await;
+
+    assert!(result.is_ok());
+}
+
+// Green: limitパラメータを追加
+pub async fn get_projects(&self, limit: Option<i32>, offset: Option<i32>)
+    -> Result<QaseResponse<ProjectsResult>> {
+    let client = reqwest::Client::new();
+    let mut request = client
+        .get(&format!("{}/project", self.base_url))
+        .header("Token", &self.api_token);
+
+    if let Some(l) = limit {
+        request = request.query(&[("limit", l.to_string())]);
+    }
+
+    let response = request.send().await?;
+    let result: QaseResponse<ProjectsResult> = response.json().await?;
+    Ok(result)
+}
+```
+```bash
+cargo test
+git commit -m "feat: get_projectsにlimitパラメータを追加（Green）"
+```
+
+**Step 5: offsetパラメータを追加**
+```rust
+// 同様にoffsetパラメータのテストと実装を追加...
+```
+
+**このアプローチの利点:**
+- ✅ 各ステップでコミットできる（問題があれば戻せる）
+- ✅ どこで問題が起きているか特定しやすい
+- ✅ テストが具体的で意味がある
+- ✅ レビューしやすい（差分が小さい）
+- ✅ 本当の「テスト駆動」開発になる
+
+#### TDD実践のチェックリスト
+
+各Greenフェーズの実装前に、以下を自問すること：
+
+- [ ] **これは本当に最小限の実装か？**
+  - もっと簡単な実装（固定値を返すなど）で済まないか？
+
+- [ ] **もっと小さく分割できないか？**
+  - 複数の機能を一度に実装していないか？
+  - 各機能を別々のサイクルに分けられないか？
+
+- [ ] **テストは具体的な値を検証しているか？**
+  - `assert!(result.is_ok())` だけになっていないか？
+  - 期待する値を明示的に書いているか？
+
+- [ ] **1つのテストで1つの事だけテストしているか？**
+  - 複数の機能を1つのテストで検証していないか？
+
+- [ ] **失敗を確認したか？**
+  - Redフェーズで本当にテストが失敗することを確認したか？
+  - 失敗理由が期待通りか確認したか？
+
+#### ベイビーステップの目安
+
+**1つのメソッドを実装する際の推奨サイクル数:**
+- **単純な関数**: 3-5サイクル
+- **HTTP通信を含む関数**: 5-10サイクル
+- **複雑なビジネスロジック**: 10-20サイクル
+
+**「大きすぎる」サインの例:**
+- 1つのコミットで50行以上のコードを追加
+- 1つのテストで複数のアサーション（3つ以上）
+- テストが失敗した時に原因が複数考えられる
+- 実装に10分以上かかる
+
+**「ちょうど良い」サインの例:**
+- 1つのコミットで10-20行のコード追加
+- 1つのテストで1-2個の関連するアサーション
+- テストが失敗した時に原因が明確
+- 実装に2-5分程度
+
 ### 4. コミット戦略
 
 #### コミットの粒度
@@ -265,18 +517,24 @@ git commit -am "test: get_by_codeの失敗するテストを追加"
 
 **Green → Refactor → 繰り返し**
 
-#### Step 4: PR作成
+#### Step 4: PR作成前のチェック
 ```bash
-# フォーマッターを実行
+# 1. フォーマッターを実行
 cargo fmt
 
-# すべてのテストが通ることを確認
+# 2. すべてのテストが通ることを確認
 cargo test
 
-# mainブランチにプッシュ
+# 3. Lintチェックを実行（CI失敗を防ぐ）
+cargo clippy --all-targets --all-features -- -D warnings
+
+# ⚠️ clippyでエラーが出た場合は必ず修正してからプッシュ
+# 例: PR #7では dead_code 警告が発生し、CI失敗後に修正が必要だった
+
+# 4. すべてクリアしたらプッシュ
 git push origin feature/project-repository
 
-# PRを作成（GitHub CLI使用）
+# 5. PRを作成（GitHub CLI使用）
 gh pr create --title "feat: implement ProjectRepository" \
   --body "- Implement get_all()
 - Implement get_by_code()
@@ -334,7 +592,8 @@ gh pr merge 4 --squash
 
 ### 完了時
 - [ ] フォーマッターを実行（`cargo fmt`）
-- [ ] すべてのテストが通る
+- [ ] すべてのテストが通る（`cargo test`）
+- [ ] Lintチェックが通る（`cargo clippy --all-targets --all-features -- -D warnings`）
 - [ ] コンパイルエラーがない
 - [ ] コミットメッセージが適切
 - [ ] PRを作成
