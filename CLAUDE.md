@@ -163,6 +163,7 @@ git commit -m "docs: READMEにセットアップ手順を追加"
 ```
 
 #### コミット前のチェック
+- [ ] フォーマッターを実行したか（`cargo fmt`）
 - [ ] テストが通っているか
 - [ ] コンパイルエラーがないか
 - [ ] コミットメッセージは明確か
@@ -266,6 +267,9 @@ git commit -am "test: get_by_codeの失敗するテストを追加"
 
 #### Step 4: PR作成
 ```bash
+# フォーマッターを実行
+cargo fmt
+
 # すべてのテストが通ることを確認
 cargo test
 
@@ -280,6 +284,35 @@ gh pr create --title "feat: implement ProjectRepository" \
 - Implement delete()
 
 Closes #1"
+```
+
+#### Step 5: CI結果確認
+```bash
+# PR番号を確認（例: #4）
+gh pr list
+
+# CIの実行状況を確認
+gh pr checks 4
+
+# CIが失敗した場合は詳細を確認
+gh run view <run-id> --log-failed
+
+# 修正が必要な場合
+# 1. 修正してコミット
+git add .
+git commit -m "fix: CI指摘事項を修正"
+
+# 2. プッシュ（CIが自動で再実行される）
+git push origin feature/project-repository
+
+# 3. 再度CI結果を確認
+gh pr checks 4
+```
+
+#### Step 6: マージ
+```bash
+# すべてのCIが通ったことを確認してマージ
+gh pr merge 4 --squash
 ```
 
 ---
@@ -297,12 +330,15 @@ Closes #1"
 - [ ] 小さいステップで進める
 - [ ] こまめにコミット
 - [ ] テストを頻繁に実行
+- [ ] コミット前に`cargo fmt`を実行
 
 ### 完了時
+- [ ] フォーマッターを実行（`cargo fmt`）
 - [ ] すべてのテストが通る
 - [ ] コンパイルエラーがない
 - [ ] コミットメッセージが適切
 - [ ] PRを作成
+- [ ] CIが通ることを確認（`gh pr checks <PR番号>`）
 - [ ] マージ後、ブランチを削除
 
 ---
