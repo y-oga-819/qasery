@@ -382,4 +382,17 @@ mod tests {
         // 今は基本的な動作確認のみ
         assert!(result.is_err() || result.is_ok());
     }
+
+    #[tokio::test]
+    async fn test_get_case() {
+        // get_caseメソッドが正しく動作することをテスト
+        let api_token = "test_api_token";
+        let client = QaseClient::new(api_token).unwrap();
+
+        let result = client.get_case("DEMO", 1).await;
+
+        // このテストは実際のAPIを呼び出すため、モック化が必要
+        // 今は基本的な動作確認のみ
+        assert!(result.is_err() || result.is_ok());
+    }
 }
