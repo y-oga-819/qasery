@@ -63,6 +63,65 @@ pub struct SuiteEntity {
 /// 単一テストスイートの結果（get_suite用）
 pub type SuiteResult = SuiteEntity;
 
+/// Test Cases APIのレスポンス結果
+#[derive(Debug, Serialize, Deserialize)]
+pub struct CasesResult {
+    pub total: i32,
+    pub filtered: i32,
+    pub count: i32,
+    pub entities: Vec<CaseEntity>,
+}
+
+/// テストケースエンティティ
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct CaseEntity {
+    pub id: i64,
+    pub position: i32,
+    pub title: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub description: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub preconditions: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub postconditions: Option<String>,
+    pub severity: i32,
+    pub priority: i32,
+    #[serde(rename = "type")]
+    pub case_type: i32,
+    pub layer: i32,
+    pub is_flaky: i32,
+    pub behavior: i32,
+    pub automation: i32,
+    pub status: i32,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub milestone_id: Option<i64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub suite_id: Option<i64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub steps_type: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub steps: Option<Vec<TestStep>>,
+    pub author_id: i64,
+    pub created_at: String,
+    pub updated_at: String,
+}
+
+/// テストステップ
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct TestStep {
+    pub position: i32,
+    pub action: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub expected_result: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub data: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub shared_step_hash: Option<String>,
+}
+
+/// 単一テストケースの結果（get_case用）
+pub type CaseResult = CaseEntity;
+
 impl QaseClient {
     /// 新しいQaseClientを作成
     ///
