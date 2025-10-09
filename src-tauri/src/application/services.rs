@@ -1,8 +1,8 @@
 // Business logic services (create, edit, delete, sync, etc.)
 
-use crate::domain::models::{Project, SyncStatus, TestSuite};
-use crate::domain::repository::{ProjectRepository, TestSuiteRepository};
-use crate::infrastructure::qase_api::{ProjectEntity, QaseClient, SuiteEntity};
+use crate::domain::models::{Project, SyncStatus, TestCase, TestCaseStep, TestSuite};
+use crate::domain::repository::{ProjectRepository, TestCaseRepository, TestSuiteRepository};
+use crate::infrastructure::qase_api::{CaseEntity, ProjectEntity, QaseClient, SuiteEntity};
 use anyhow::Result;
 use chrono::Utc;
 use std::sync::Arc;
@@ -189,6 +189,155 @@ impl TestSuiteService {
             sync_status: SyncStatus::Clean,
             is_deleted: false,
         }
+    }
+}
+
+/// テストケースサービス
+pub struct TestCaseService {
+    repository: Arc<dyn TestCaseRepository>,
+    qase_client: Option<Arc<QaseClient>>,
+}
+
+impl TestCaseService {
+    /// 新しいTestCaseServiceを作成
+    ///
+    /// # Arguments
+    /// * `repository` - テストケースリポジトリ
+    /// * `qase_client` - Qase APIクライアント（Optional）
+    ///
+    /// # Returns
+    /// TestCaseServiceインスタンス
+    pub fn new(repository: Arc<dyn TestCaseRepository>, qase_client: Option<Arc<QaseClient>>) -> Self {
+        Self { repository, qase_client }
+    }
+
+    /// スイート別にテストケースを取得
+    ///
+    /// # Arguments
+    /// * `suite_id` - テストスイートID
+    ///
+    /// # Returns
+    /// テストケース一覧またはエラー
+    pub fn get_cases_by_suite(&self, suite_id: i64) -> Result<Vec<TestCase>> {
+        self.repository.get_by_suite(suite_id)
+    }
+
+    /// テストケースを取得（ステップ含む）
+    ///
+    /// # Arguments
+    /// * `id` - テストケースID
+    ///
+    /// # Returns
+    /// テストケースまたはエラー
+    pub fn get_case(&self, id: i64) -> Result<Option<TestCase>> {
+        self.repository.get_by_id(id)
+    }
+
+    /// テストケースを保存
+    ///
+    /// # Arguments
+    /// * `test_case` - テストケース
+    ///
+    /// # Returns
+    /// 成功またはエラー
+    pub fn save_case(&self, test_case: &TestCase) -> Result<()> {
+        self.repository.save(test_case)
+    }
+
+    /// Qaseからテストケースを取り込み
+    ///
+    /// # Arguments
+    /// * `project_code` - プロジェクトコード
+    ///
+    /// # Returns
+    /// 取り込んだテストケース数またはエラー
+    pub async fn sync_cases(&self, project_code: &str) -> Result<usize> {
+        let client = self.qase_client.as_ref()
+            .ok_or_else(|| anyhow::anyhow!("Qase API client is not configured"))?;
+
+        // Qase APIからテストケース一覧を取得
+        let response = client.get_cases(project_code, None, None, None).await?;
+        let entities = response.result.entities;
+
+        // 各テストケースをローカルDBに保存
+        let mut count = 0;
+        for entity in entities {
+            let test_case = self.convert_entity_to_test_case(&entity, project_code);
+            self.repository.save(&test_case)?;
+
+            // ステップも保存
+            if let Some(steps) = &entity.steps {
+                let test_case_steps = self.convert_steps(&steps, test_case.id);
+                self.repository.save_steps(test_case.id, &test_case_steps)?;
+            }
+
+            count += 1;
+        }
+
+        Ok(count)
+    }
+
+    /// CaseEntityをTestCaseに変換
+    ///
+    /// # Arguments
+    /// * `entity` - Qase APIから取得したテストケースエンティティ
+    /// * `project_code` - プロジェクトコード
+    ///
+    /// # Returns
+    /// TestCaseモデル
+    fn convert_entity_to_test_case(&self, entity: &CaseEntity, project_code: &str) -> TestCase {
+        let now = Utc::now();
+
+        // Qase APIのcreated_at/updated_atはISO 8601形式の文字列
+        // Phase 1では簡略化のため、パースエラーは現在時刻にフォールバック
+        let created_at = entity.created_at.parse().unwrap_or(now);
+        let updated_at = entity.updated_at.parse().unwrap_or(now);
+
+        TestCase {
+            id: entity.id,
+            project_code: project_code.to_string(),
+            suite_id: entity.suite_id,
+            title: entity.title.clone(),
+            description: entity.description.clone(),
+            preconditions: entity.preconditions.clone(),
+            postconditions: entity.postconditions.clone(),
+            severity: entity.severity,
+            priority: entity.priority,
+            test_type: entity.case_type,
+            status: entity.status,
+            automation: entity.automation,
+            author_id: Some(entity.author_id),
+            created_at,
+            updated_at,
+            local_updated_at: now,
+            remote_updated_at: Some(updated_at),
+            sync_status: SyncStatus::Clean,
+            is_deleted: false,
+        }
+    }
+
+    /// Qase APIのステップをTestCaseStepに変換
+    ///
+    /// # Arguments
+    /// * `steps` - Qase APIから取得したステップ
+    /// * `test_case_id` - テストケースID
+    ///
+    /// # Returns
+    /// TestCaseStepのリスト
+    fn convert_steps(&self, steps: &[crate::infrastructure::qase_api::TestStep], test_case_id: i64) -> Vec<TestCaseStep> {
+        steps.iter().map(|step| {
+            TestCaseStep {
+                id: 0, // Auto-increment
+                test_case_id,
+                hash: format!("step-{}-{}", test_case_id, step.position), // Phase 1では簡略化
+                shared_step_hash: step.shared_step_hash.clone(),
+                position: step.position,
+                action: step.action.clone(),
+                expected_result: step.expected_result.clone(),
+                data: step.data.clone(),
+                parent_step_id: None, // Phase 1ではネストされたステップは未対応
+            }
+        }).collect()
     }
 }
 
