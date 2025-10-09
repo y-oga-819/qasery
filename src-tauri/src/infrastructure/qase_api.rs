@@ -1,4 +1,8 @@
 // Qase API Client implementation
+
+// Phase 1実装時点ではまだApplication層から使用されていないため、dead_code警告を抑制
+#![allow(dead_code)]
+
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 
