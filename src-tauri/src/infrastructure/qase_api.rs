@@ -260,6 +260,49 @@ impl QaseClient {
         let result: QaseResponse<SuiteResult> = response.json().await?;
         Ok(result)
     }
+
+    /// プロジェクトのテストケース一覧を取得
+    ///
+    /// # Arguments
+    /// * `code` - プロジェクトコード (2-10文字)
+    /// * `search` - 検索キーワード (オプション)
+    /// * `limit` - 取得件数 (1-100, デフォルト: 10)
+    /// * `offset` - スキップ件数 (0-100000, デフォルト: 0)
+    ///
+    /// # Returns
+    /// テストケース一覧またはエラー
+    pub async fn get_cases(
+        &self,
+        code: &str,
+        search: Option<&str>,
+        limit: Option<i32>,
+        offset: Option<i32>,
+    ) -> Result<QaseResponse<CasesResult>> {
+        let client = reqwest::Client::new();
+        let url = format!("{}/case/{}", self.base_url, code);
+
+        let mut query_params = vec![];
+        if let Some(s) = search {
+            query_params.push(("search", s.to_string()));
+        }
+        if let Some(l) = limit {
+            query_params.push(("limit", l.to_string()));
+        }
+        if let Some(o) = offset {
+            query_params.push(("offset", o.to_string()));
+        }
+
+        let response = client
+            .get(&url)
+            .header("Token", &self.api_token)
+            .header("accept", "application/json")
+            .query(&query_params)
+            .send()
+            .await?;
+
+        let result: QaseResponse<CasesResult> = response.json().await?;
+        Ok(result)
+    }
 }
 
 #[cfg(test)]
