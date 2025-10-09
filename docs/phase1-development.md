@@ -15,24 +15,24 @@ Qaseとの基本的な連携とローカルでのCRUD操作
 ### 1. プロジェクトセットアップ
 
 #### 1.1 Tauriプロジェクト初期化
-- [ ] Tauri CLIのインストール
-- [ ] Tauriプロジェクトの作成（`npm create tauri-app`）
-- [ ] ディレクトリ構造の整理（backend/, frontend/）
-- [ ] package.jsonの設定（モノレポ構成）
+- [x] Tauri CLIのインストール
+- [x] Tauriプロジェクトの作成（`npm create tauri-app`）
+- [x] ディレクトリ構造の整理（backend/, frontend/）
+- [x] package.jsonの設定（モノレポ構成）
 
 #### 1.2 Rustバックエンド構成
-- [ ] Cargo.tomlの依存関係設定
-  - [ ] `serde`, `serde_json`（シリアライゼーション）
-  - [ ] `tokio`（非同期ランタイム）
-  - [ ] `rusqlite`（SQLite接続）
-  - [ ] `reqwest`（HTTP クライアント、Qase API用）
-  - [ ] `chrono`（日時処理）
-  - [ ] `anyhow`, `thiserror`（エラーハンドリング）
-- [ ] backend/srcディレクトリ構造の作成
-  - [ ] `domain/mod.rs`
-  - [ ] `application/mod.rs`
-  - [ ] `infrastructure/mod.rs`
-  - [ ] `presentation/mod.rs`
+- [x] Cargo.tomlの依存関係設定
+  - [x] `serde`, `serde_json`（シリアライゼーション）
+  - [x] `tokio`（非同期ランタイム）
+  - [x] `rusqlite`（SQLite接続）
+  - [x] `reqwest`（HTTP クライアント、Qase API用）
+  - [x] `chrono`（日時処理）
+  - [x] `anyhow`, `thiserror`（エラーハンドリング）
+- [x] backend/srcディレクトリ構造の作成
+  - [x] `domain/mod.rs`
+  - [x] `application/mod.rs`
+  - [x] `infrastructure/mod.rs`
+  - [x] `presentation/mod.rs`
 
 #### 1.3 フロントエンド構成
 - [ ] package.jsonの依存関係設定
@@ -55,64 +55,64 @@ Qaseとの基本的な連携とローカルでのCRUD操作
 #### 2.1 Domain層（backend/src/domain/）
 
 ##### 2.1.1 models.rs - エンティティ定義
-- [ ] `Project` struct
-  - [ ] code, title, description
-  - [ ] local_updated_at, remote_updated_at, sync_status, is_deleted
-- [ ] `TestSuite` struct
-  - [ ] id, project_code, title, description, preconditions
-  - [ ] parent_id, position, cases_count
-  - [ ] created_at, updated_at
-  - [ ] local_updated_at, remote_updated_at, sync_status, is_deleted
-- [ ] `TestCase` struct
-  - [ ] id, project_code, suite_id, title, description
-  - [ ] preconditions, postconditions
-  - [ ] severity, priority, type, status, automation, author_id
-  - [ ] created_at, updated_at
-  - [ ] local_updated_at, remote_updated_at, sync_status, is_deleted
-- [ ] `TestCaseStep` struct
-  - [ ] id, test_case_id, hash, shared_step_hash
-  - [ ] position, action, expected_result, data
-  - [ ] parent_step_id
-- [ ] `SyncStatus` enum（clean, local_modified, remote_modified, conflict）
+- [x] `Project` struct
+  - [x] code, title, description
+  - [x] local_updated_at, remote_updated_at, sync_status, is_deleted
+- [x] `TestSuite` struct
+  - [x] id, project_code, title, description, preconditions
+  - [x] parent_id, position, cases_count
+  - [x] created_at, updated_at
+  - [x] local_updated_at, remote_updated_at, sync_status, is_deleted
+- [x] `TestCase` struct
+  - [x] id, project_code, suite_id, title, description
+  - [x] preconditions, postconditions
+  - [x] severity, priority, type, status, automation, author_id
+  - [x] created_at, updated_at
+  - [x] local_updated_at, remote_updated_at, sync_status, is_deleted
+- [x] `TestCaseStep` struct
+  - [x] id, test_case_id, hash, shared_step_hash
+  - [x] position, action, expected_result, data
+  - [x] parent_step_id
+- [x] `SyncStatus` enum（clean, local_modified, remote_modified, conflict）
 
 ##### 2.1.2 repository.rs - リポジトリトレイト
-- [ ] `ProjectRepository` trait
-  - [ ] `get_all()`, `get_by_code()`, `save()`, `delete()`
-- [ ] `TestSuiteRepository` trait
-  - [ ] `get_by_project()`, `get_by_id()`, `save()`, `delete()`
+- [x] `ProjectRepository` trait
+  - [x] `get_all()`, `get_by_code()`, `save()`, `delete()`
+- [x] `TestSuiteRepository` trait
+  - [x] `get_by_project()`, `get_by_id()`, `save()`, `delete()`
   - [ ] `get_tree()` (階層構造取得)
-- [ ] `TestCaseRepository` trait
-  - [ ] `get_by_suite()`, `get_by_id()`, `save()`, `delete()`
-  - [ ] `get_steps()`, `save_steps()`
+- [x] `TestCaseRepository` trait
+  - [x] `get_by_suite()`, `get_by_id()`, `save()`, `delete()`
+  - [x] `get_steps()`, `save_steps()`
 
 #### 2.2 Infrastructure層（backend/src/infrastructure/）
 
 ##### 2.2.1 db.rs - SQLite実装
-- [ ] データベース接続の初期化
-- [ ] マイグレーション機能
-  - [ ] `projects`テーブル作成
-  - [ ] `test_suites`テーブル作成
-  - [ ] `test_cases`テーブル作成
-  - [ ] `test_case_steps`テーブル作成
-  - [ ] インデックスの作成
-- [ ] `ProjectRepository`実装
-  - [ ] `get_all()` - 全プロジェクト取得
-  - [ ] `get_by_code()` - コードでプロジェクト取得
-  - [ ] `save()` - プロジェクト保存/更新
-  - [ ] `delete()` - プロジェクト削除
-- [ ] `TestSuiteRepository`実装
-  - [ ] `get_by_project()` - プロジェクト別スイート取得
-  - [ ] `get_by_id()` - IDでスイート取得
+- [x] データベース接続の初期化
+- [x] マイグレーション機能
+  - [x] `projects`テーブル作成
+  - [x] `test_suites`テーブル作成
+  - [x] `test_cases`テーブル作成
+  - [x] `test_case_steps`テーブル作成
+  - [x] インデックスの作成
+- [x] `ProjectRepository`実装
+  - [x] `get_all()` - 全プロジェクト取得
+  - [x] `get_by_code()` - コードでプロジェクト取得
+  - [x] `save()` - プロジェクト保存/更新
+  - [x] `delete()` - プロジェクト削除
+- [x] `TestSuiteRepository`実装
+  - [x] `get_by_project()` - プロジェクト別スイート取得
+  - [x] `get_by_id()` - IDでスイート取得
   - [ ] `get_tree()` - 階層構造で取得（parent_idを使用）
-  - [ ] `save()` - スイート保存/更新
-  - [ ] `delete()` - スイート削除
-- [ ] `TestCaseRepository`実装
-  - [ ] `get_by_suite()` - スイート別ケース取得
-  - [ ] `get_by_id()` - IDでケース取得
-  - [ ] `save()` - ケース保存/更新
-  - [ ] `delete()` - ケース削除
-  - [ ] `get_steps()` - ステップ取得
-  - [ ] `save_steps()` - ステップ保存
+  - [x] `save()` - スイート保存/更新
+  - [x] `delete()` - スイート削除
+- [x] `TestCaseRepository`実装
+  - [x] `get_by_suite()` - スイート別ケース取得
+  - [x] `get_by_id()` - IDでケース取得
+  - [x] `save()` - ケース保存/更新
+  - [x] `delete()` - ケース削除
+  - [x] `get_steps()` - ステップ取得
+  - [x] `save_steps()` - ステップ保存
 
 ##### 2.2.2 qase_api.rs - Qase API Client
 - [ ] API Clientの初期化（APIトークン管理）
