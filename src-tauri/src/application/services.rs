@@ -1,13 +1,16 @@
 // Business logic services (create, edit, delete, sync, etc.)
 
-use crate::domain::models::Project;
+use crate::domain::models::{Project, SyncStatus};
 use crate::domain::repository::ProjectRepository;
+use crate::infrastructure::qase_api::{ProjectEntity, QaseClient};
 use anyhow::Result;
+use chrono::Utc;
 use std::sync::Arc;
 
 /// プロジェクトサービス
 pub struct ProjectService {
     repository: Arc<dyn ProjectRepository>,
+    qase_client: Option<Arc<QaseClient>>,
 }
 
 impl ProjectService {
@@ -15,11 +18,12 @@ impl ProjectService {
     ///
     /// # Arguments
     /// * `repository` - プロジェクトリポジトリ
+    /// * `qase_client` - Qase APIクライアント（Optionalる）
     ///
     /// # Returns
     /// ProjectServiceインスタンス
-    pub fn new(repository: Arc<dyn ProjectRepository>) -> Self {
-        Self { repository }
+    pub fn new(repository: Arc<dyn ProjectRepository>, qase_client: Option<Arc<QaseClient>>) -> Self {
+        Self { repository, qase_client }
     }
 
     /// ローカルのプロジェクト一覧を取得
@@ -39,6 +43,49 @@ impl ProjectService {
     /// プロジェクトまたはエラー
     pub fn get_project(&self, code: &str) -> Result<Option<Project>> {
         self.repository.get_by_code(code)
+    }
+
+    /// Qaseからプロジェクトを取り込み
+    ///
+    /// # Returns
+    /// 取り込んだプロジェクト数またはエラー
+    pub async fn sync_projects(&self) -> Result<usize> {
+        let client = self.qase_client.as_ref()
+            .ok_or_else(|| anyhow::anyhow!("Qase API client is not configured"))?;
+
+        // Qase APIからプロジェクト一覧を取得
+        let response = client.get_projects(None, None).await?;
+        let entities = response.result.entities;
+
+        // 各プロジェクトをローカルDBに保存
+        let mut count = 0;
+        for entity in entities {
+            let project = self.convert_entity_to_project(&entity);
+            self.repository.save(&project)?;
+            count += 1;
+        }
+
+        Ok(count)
+    }
+
+    /// ProjectEntityをProjectに変換
+    ///
+    /// # Arguments
+    /// * `entity` - Qase APIから取得したプロジェクトエンティティ
+    ///
+    /// # Returns
+    /// Projectモデル
+    fn convert_entity_to_project(&self, entity: &ProjectEntity) -> Project {
+        let now = Utc::now();
+        Project {
+            code: entity.code.clone(),
+            title: entity.title.clone(),
+            description: None, // Phase 1では簡略化
+            local_updated_at: now,
+            remote_updated_at: Some(now),
+            sync_status: SyncStatus::Clean,
+            is_deleted: false,
+        }
     }
 }
 
@@ -81,7 +128,7 @@ mod tests {
     fn test_list_projects_returns_empty_list() {
         // 空のリポジトリでlist_projects()を呼ぶと空のリストが返る
         let repository = Arc::new(MockProjectRepository::new());
-        let service = ProjectService::new(repository);
+        let service = ProjectService::new(repository, None);
 
         let result = service.list_projects();
 
@@ -93,7 +140,7 @@ mod tests {
     fn test_get_project_returns_none_when_not_found() {
         // プロジェクトが存在しない場合、Noneが返る
         let repository = Arc::new(MockProjectRepository::new());
-        let service = ProjectService::new(repository);
+        let service = ProjectService::new(repository, None);
 
         let result = service.get_project("DEMO");
 
