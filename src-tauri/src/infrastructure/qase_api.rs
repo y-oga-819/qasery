@@ -178,6 +178,29 @@ impl QaseClient {
         let result: QaseResponse<SuitesResult> = response.json().await?;
         Ok(result)
     }
+
+    /// 特定のテストスイートを取得
+    ///
+    /// # Arguments
+    /// * `code` - プロジェクトコード (2-10文字)
+    /// * `id` - テストスイートID
+    ///
+    /// # Returns
+    /// テストスイート情報またはエラー
+    pub async fn get_suite(&self, code: &str, id: i64) -> Result<QaseResponse<SuiteResult>> {
+        let client = reqwest::Client::new();
+        let url = format!("{}/suite/{}/{}", self.base_url, code, id);
+
+        let response = client
+            .get(&url)
+            .header("Token", &self.api_token)
+            .header("accept", "application/json")
+            .send()
+            .await?;
+
+        let result: QaseResponse<SuiteResult> = response.json().await?;
+        Ok(result)
+    }
 }
 
 #[cfg(test)]
