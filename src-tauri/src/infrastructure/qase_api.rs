@@ -303,6 +303,29 @@ impl QaseClient {
         let result: QaseResponse<CasesResult> = response.json().await?;
         Ok(result)
     }
+
+    /// 特定のテストケースを取得
+    ///
+    /// # Arguments
+    /// * `code` - プロジェクトコード (2-10文字)
+    /// * `id` - テストケースID
+    ///
+    /// # Returns
+    /// テストケース情報またはエラー
+    pub async fn get_case(&self, code: &str, id: i64) -> Result<QaseResponse<CaseResult>> {
+        let client = reqwest::Client::new();
+        let url = format!("{}/case/{}/{}", self.base_url, code, id);
+
+        let response = client
+            .get(&url)
+            .header("Token", &self.api_token)
+            .header("accept", "application/json")
+            .send()
+            .await?;
+
+        let result: QaseResponse<CaseResult> = response.json().await?;
+        Ok(result)
+    }
 }
 
 #[cfg(test)]
