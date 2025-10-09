@@ -84,6 +84,28 @@ impl QaseClient {
         let result: QaseResponse<ProjectsResult> = response.json().await?;
         Ok(result)
     }
+
+    /// 特定のプロジェクトを取得
+    ///
+    /// # Arguments
+    /// * `code` - プロジェクトコード (2-10文字)
+    ///
+    /// # Returns
+    /// プロジェクト情報またはエラー
+    pub async fn get_project(&self, code: &str) -> Result<QaseResponse<ProjectResult>> {
+        let client = reqwest::Client::new();
+        let url = format!("{}/project/{}", self.base_url, code);
+
+        let response = client
+            .get(&url)
+            .header("Token", &self.api_token)
+            .header("accept", "application/json")
+            .send()
+            .await?;
+
+        let result: QaseResponse<ProjectResult> = response.json().await?;
+        Ok(result)
+    }
 }
 
 #[cfg(test)]
