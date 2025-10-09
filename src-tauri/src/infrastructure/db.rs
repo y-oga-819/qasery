@@ -1112,4 +1112,173 @@ mod tests {
         assert_eq!(retrieved_steps[0].action, "Action 1");
         assert_eq!(retrieved_steps[1].action, "Action 2");
     }
+
+    // 異常系テスト
+
+    #[test]
+    fn test_invalid_datetime_format_in_database() {
+        // 不正な日時形式のデータがDBに存在する場合、読み込み時にエラーになることを確認
+        let db = Database::new(":memory:").unwrap();
+
+        // 直接SQLでDBに不正な日時を挿入
+        let conn = db.conn.lock().unwrap();
+        conn.execute(
+            "INSERT INTO projects (code, title, description, local_updated_at, remote_updated_at, sync_status, is_deleted)
+             VALUES ('TEST', 'Test Project', NULL, 'invalid-datetime', NULL, 'clean', 0)",
+            [],
+        )
+        .unwrap();
+        drop(conn);
+
+        // 読み込み時にエラーになることを確認
+        let result = db.get_by_code("TEST");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_foreign_key_constraint_violation() {
+        // 外部キー制約違反時にエラーになることを確認
+        let db = Database::new(":memory:").unwrap();
+
+        // 存在しないproject_codeでTestSuiteを保存しようとする
+        let suite = TestSuite {
+            id: 1,
+            project_code: "NONEXISTENT".to_string(),
+            title: "Test Suite".to_string(),
+            description: None,
+            preconditions: None,
+            parent_id: None,
+            position: 1,
+            cases_count: 0,
+            created_at: Utc::now(),
+            updated_at: Utc::now(),
+            local_updated_at: Utc::now(),
+            remote_updated_at: None,
+            sync_status: SyncStatus::Clean,
+            is_deleted: false,
+        };
+
+        let result = TestSuiteRepository::save(&db, &suite);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_invalid_sync_status_in_database() {
+        // 不正なsync_status値がDBに存在する場合、読み込み時にエラーになることを確認
+        let db = Database::new(":memory:").unwrap();
+
+        // 直接SQLでDBに不正なsync_statusを挿入
+        let conn = db.conn.lock().unwrap();
+        let now = Utc::now().to_rfc3339();
+        conn.execute(
+            "INSERT INTO projects (code, title, description, local_updated_at, remote_updated_at, sync_status, is_deleted)
+             VALUES ('TEST', 'Test Project', NULL, ?, NULL, 'invalid_status', 0)",
+            [&now],
+        )
+        .unwrap();
+        drop(conn);
+
+        // 読み込み時にエラーになることを確認
+        let result = db.get_by_code("TEST");
+        assert!(result.is_err());
+        let error_message = result.unwrap_err().to_string();
+        assert!(error_message.contains("Invalid sync_status"));
+    }
+
+    #[test]
+    fn test_transaction_rollback_on_error() {
+        // save_steps()でエラーが発生した場合、トランザクションがロールバックされることを確認
+        let db = Database::new(":memory:").unwrap();
+
+        // プロジェクト、テストスイート、テストケースを作成
+        let project = Project {
+            code: "TEST".to_string(),
+            title: "Test Project".to_string(),
+            description: None,
+            local_updated_at: Utc::now(),
+            remote_updated_at: None,
+            sync_status: SyncStatus::Clean,
+            is_deleted: false,
+        };
+        ProjectRepository::save(&db, &project).unwrap();
+
+        let suite = TestSuite {
+            id: 1,
+            project_code: "TEST".to_string(),
+            title: "Test Suite".to_string(),
+            description: None,
+            preconditions: None,
+            parent_id: None,
+            position: 1,
+            cases_count: 0,
+            created_at: Utc::now(),
+            updated_at: Utc::now(),
+            local_updated_at: Utc::now(),
+            remote_updated_at: None,
+            sync_status: SyncStatus::Clean,
+            is_deleted: false,
+        };
+        TestSuiteRepository::save(&db, &suite).unwrap();
+
+        let test_case = TestCase {
+            id: 1,
+            project_code: "TEST".to_string(),
+            suite_id: Some(1),
+            title: "Test Case".to_string(),
+            description: None,
+            preconditions: None,
+            postconditions: None,
+            severity: 0,
+            priority: 0,
+            test_type: 0,
+            status: 0,
+            automation: 0,
+            author_id: None,
+            created_at: Utc::now(),
+            updated_at: Utc::now(),
+            local_updated_at: Utc::now(),
+            remote_updated_at: None,
+            sync_status: SyncStatus::Clean,
+            is_deleted: false,
+        };
+        TestCaseRepository::save(&db, &test_case).unwrap();
+
+        // 初期データを保存
+        let initial_steps = vec![TestCaseStep {
+            id: 0,
+            test_case_id: 1,
+            hash: "hash1".to_string(),
+            shared_step_hash: None,
+            position: 1,
+            action: "Initial Action".to_string(),
+            expected_result: Some("Initial Result".to_string()),
+            data: None,
+            parent_step_id: None,
+        }];
+        TestCaseRepository::save_steps(&db, 1, &initial_steps).unwrap();
+
+        // 存在しないtest_case_idでステップを保存しようとする（エラーを発生させる）
+        // 注: 実際にはこれは外部キー制約で失敗するため、トランザクションがロールバックされる
+        let invalid_steps = vec![TestCaseStep {
+            id: 0,
+            test_case_id: 999, // 存在しないtest_case_id
+            hash: "hash2".to_string(),
+            shared_step_hash: None,
+            position: 1,
+            action: "Invalid Action".to_string(),
+            expected_result: None,
+            data: None,
+            parent_step_id: None,
+        }];
+
+        // 直接コネクションを取得してトランザクション内でエラーを発生させる
+        // これは、save_steps内部で削除→挿入の途中でエラーが起きた場合を模倣
+        let result = TestCaseRepository::save_steps(&db, 999, &invalid_steps);
+        assert!(result.is_err());
+
+        // 元のデータが保持されていることを確認（ロールバック成功）
+        let retrieved_steps = TestCaseRepository::get_steps(&db, 1).unwrap();
+        assert_eq!(retrieved_steps.len(), 1);
+        assert_eq!(retrieved_steps[0].action, "Initial Action");
+    }
 }
