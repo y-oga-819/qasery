@@ -1,7 +1,7 @@
 // Tauri コマンドのラッパー
 // Rust側のcommands.rsと対応
 
-import { invoke } from '@tauri-apps/api/tauri';
+import { invoke } from '@tauri-apps/api/core';
 import type { Project, TestSuite, TestCase } from '../types';
 
 /**
