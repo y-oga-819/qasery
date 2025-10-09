@@ -11,6 +11,17 @@ use std::sync::{Arc, Mutex};
 use crate::domain::models::{Project, SyncStatus, TestCase, TestCaseStep, TestSuite};
 use crate::domain::repository::{ProjectRepository, TestCaseRepository, TestSuiteRepository};
 
+/// 文字列からSyncStatusをパースする
+fn parse_sync_status(s: &str) -> Result<SyncStatus> {
+    match s {
+        "clean" => Ok(SyncStatus::Clean),
+        "local_modified" => Ok(SyncStatus::LocalModified),
+        "remote_modified" => Ok(SyncStatus::RemoteModified),
+        "conflict" => Ok(SyncStatus::Conflict),
+        _ => Err(anyhow::anyhow!("不正なsync_status値: {}", s)),
+    }
+}
+
 /// データベース接続管理
 pub struct Database {
     conn: Arc<Mutex<Connection>>,
@@ -36,7 +47,14 @@ impl Database {
 
     /// マイグレーションを実行（テーブル作成）
     fn migrate(&self) -> Result<()> {
-        let conn = self.conn.lock().unwrap();
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|e| anyhow::anyhow!("Mutexロックの取得に失敗しました: {}", e))?;
+
+        // 外部キー制約を有効化
+        conn.execute("PRAGMA foreign_keys = ON", [])
+            .context("外部キー制約の有効化に失敗しました")?;
 
         // projectsテーブル
         conn.execute(
@@ -139,6 +157,24 @@ impl Database {
             [],
         )?;
 
+        // 同期処理用のインデックス
+        conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_projects_sync_status ON projects(sync_status)",
+            [],
+        )?;
+        conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_projects_is_deleted ON projects(is_deleted)",
+            [],
+        )?;
+        conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_test_suites_sync_status ON test_suites(sync_status)",
+            [],
+        )?;
+        conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_test_cases_sync_status ON test_cases(sync_status)",
+            [],
+        )?;
+
         Ok(())
     }
 }
@@ -146,7 +182,11 @@ impl Database {
 /// ProjectRepository traitの実装
 impl ProjectRepository for Database {
     fn get_all(&self) -> Result<Vec<Project>> {
-        let conn = self.conn.lock().unwrap();
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|e| anyhow::anyhow!("Mutexロックの取得に失敗しました: {}", e))?;
+
         let mut stmt = conn.prepare(
             "SELECT code, title, description, local_updated_at, remote_updated_at, sync_status, is_deleted
              FROM projects
@@ -155,31 +195,59 @@ impl ProjectRepository for Database {
 
         let projects = stmt
             .query_map([], |row| {
-                Ok(Project {
-                    code: row.get(0)?,
-                    title: row.get(1)?,
-                    description: row.get(2)?,
-                    local_updated_at: row.get::<_, String>(3)?.parse().unwrap(),
-                    remote_updated_at: row
-                        .get::<_, Option<String>>(4)?
-                        .and_then(|s| s.parse().ok()),
-                    sync_status: match row.get::<_, String>(5)?.as_str() {
-                        "clean" => SyncStatus::Clean,
-                        "local_modified" => SyncStatus::LocalModified,
-                        "remote_modified" => SyncStatus::RemoteModified,
-                        "conflict" => SyncStatus::Conflict,
-                        _ => SyncStatus::Clean,
-                    },
-                    is_deleted: row.get(6)?,
-                })
+                let local_updated_str: String = row.get(3)?;
+                let remote_updated_str: Option<String> = row.get(4)?;
+                let sync_status_str: String = row.get(5)?;
+
+                Ok((
+                    row.get::<_, String>(0)?,         // code
+                    row.get::<_, String>(1)?,         // title
+                    row.get::<_, Option<String>>(2)?, // description
+                    local_updated_str,
+                    remote_updated_str,
+                    sync_status_str,
+                    row.get::<_, bool>(6)?, // is_deleted
+                ))
             })?
-            .collect::<Result<Vec<_>, _>>()?;
+            .collect::<Result<Vec<_>, rusqlite::Error>>()?
+            .into_iter()
+            .map(
+                |(
+                    code,
+                    title,
+                    description,
+                    local_updated_str,
+                    remote_updated_str,
+                    sync_status_str,
+                    is_deleted,
+                )| {
+                    Ok(Project {
+                        code,
+                        title,
+                        description,
+                        local_updated_at: local_updated_str
+                            .parse()
+                            .context("local_updated_atのパースに失敗しました")?,
+                        remote_updated_at: remote_updated_str
+                            .map(|s| s.parse())
+                            .transpose()
+                            .context("remote_updated_atのパースに失敗しました")?,
+                        sync_status: parse_sync_status(&sync_status_str)?,
+                        is_deleted,
+                    })
+                },
+            )
+            .collect::<Result<Vec<_>>>()?;
 
         Ok(projects)
     }
 
     fn get_by_code(&self, code: &str) -> Result<Option<Project>> {
-        let conn = self.conn.lock().unwrap();
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|e| anyhow::anyhow!("Mutexロックの取得に失敗しました: {}", e))?;
+
         let mut stmt = conn.prepare(
             "SELECT code, title, description, local_updated_at, remote_updated_at, sync_status, is_deleted
              FROM projects
@@ -187,34 +255,54 @@ impl ProjectRepository for Database {
         )?;
 
         let result = stmt.query_row([code], |row| {
-            Ok(Project {
-                code: row.get(0)?,
-                title: row.get(1)?,
-                description: row.get(2)?,
-                local_updated_at: row.get::<_, String>(3)?.parse().unwrap(),
-                remote_updated_at: row
-                    .get::<_, Option<String>>(4)?
-                    .and_then(|s| s.parse().ok()),
-                sync_status: match row.get::<_, String>(5)?.as_str() {
-                    "clean" => SyncStatus::Clean,
-                    "local_modified" => SyncStatus::LocalModified,
-                    "remote_modified" => SyncStatus::RemoteModified,
-                    "conflict" => SyncStatus::Conflict,
-                    _ => SyncStatus::Clean,
-                },
-                is_deleted: row.get(6)?,
-            })
+            let local_updated_str: String = row.get(3)?;
+            let remote_updated_str: Option<String> = row.get(4)?;
+            let sync_status_str: String = row.get(5)?;
+
+            Ok((
+                row.get::<_, String>(0)?,         // code
+                row.get::<_, String>(1)?,         // title
+                row.get::<_, Option<String>>(2)?, // description
+                local_updated_str,
+                remote_updated_str,
+                sync_status_str,
+                row.get::<_, bool>(6)?, // is_deleted
+            ))
         });
 
         match result {
-            Ok(project) => Ok(Some(project)),
+            Ok((
+                code,
+                title,
+                description,
+                local_updated_str,
+                remote_updated_str,
+                sync_status_str,
+                is_deleted,
+            )) => Ok(Some(Project {
+                code,
+                title,
+                description,
+                local_updated_at: local_updated_str
+                    .parse()
+                    .context("local_updated_atのパースに失敗しました")?,
+                remote_updated_at: remote_updated_str
+                    .map(|s| s.parse())
+                    .transpose()
+                    .context("remote_updated_atのパースに失敗しました")?,
+                sync_status: parse_sync_status(&sync_status_str)?,
+                is_deleted,
+            })),
             Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
             Err(e) => Err(e.into()),
         }
     }
 
     fn save(&self, project: &Project) -> Result<()> {
-        let conn = self.conn.lock().unwrap();
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|e| anyhow::anyhow!("Mutexロックの取得に失敗しました: {}", e))?;
 
         let sync_status_str = match project.sync_status {
             SyncStatus::Clean => "clean",
@@ -242,7 +330,10 @@ impl ProjectRepository for Database {
     }
 
     fn delete(&self, code: &str) -> Result<()> {
-        let conn = self.conn.lock().unwrap();
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|e| anyhow::anyhow!("Mutexロックの取得に失敗しました: {}", e))?;
 
         conn.execute("UPDATE projects SET is_deleted = 1 WHERE code = ?", [code])?;
 
@@ -562,17 +653,26 @@ impl TestCaseRepository for Database {
     }
 
     fn save_steps(&self, test_case_id: i64, steps: &[TestCaseStep]) -> Result<()> {
-        let conn = self.conn.lock().unwrap();
+        let mut conn = self
+            .conn
+            .lock()
+            .map_err(|e| anyhow::anyhow!("Mutexロックの取得に失敗しました: {}", e))?;
+
+        // トランザクション開始
+        let tx = conn
+            .transaction()
+            .context("トランザクションの開始に失敗しました")?;
 
         // 既存のステップを削除
-        conn.execute(
+        tx.execute(
             "DELETE FROM test_case_steps WHERE test_case_id = ?",
             [test_case_id],
-        )?;
+        )
+        .context("既存ステップの削除に失敗しました")?;
 
         // 新しいステップを保存
         for step in steps {
-            conn.execute(
+            tx.execute(
                 "INSERT INTO test_case_steps
                  (test_case_id, hash, shared_step_hash, position, action, expected_result, data, parent_step_id)
                  VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
@@ -586,8 +686,13 @@ impl TestCaseRepository for Database {
                     step.data,
                     step.parent_step_id,
                 ],
-            )?;
+            )
+            .context("ステップの保存に失敗しました")?;
         }
+
+        // トランザクションをコミット
+        tx.commit()
+            .context("トランザクションのコミットに失敗しました")?;
 
         Ok(())
     }
@@ -953,5 +1058,148 @@ mod tests {
         assert_eq!(retrieved_steps.len(), 2);
         assert_eq!(retrieved_steps[0].action, "Action 1");
         assert_eq!(retrieved_steps[1].action, "Action 2");
+    }
+
+    #[test]
+    fn test_invalid_datetime_format_handling() {
+        // 不正な日時形式のデータがDBにある場合にエラーを返すことを確認
+        let db = Database::new(":memory:").unwrap();
+
+        // 直接DBに不正なデータを挿入
+        let conn = db.conn.lock().unwrap();
+        conn.execute(
+            "INSERT INTO projects (code, title, description, local_updated_at, remote_updated_at, sync_status, is_deleted)
+             VALUES (?, ?, ?, ?, ?, ?, ?)",
+            params!["TEST", "Test", None::<String>, "invalid-datetime", None::<String>, "clean", 0],
+        ).unwrap();
+        drop(conn);
+
+        // 取得時にエラーが返されることを期待
+        let result = db.get_by_code("TEST");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_invalid_sync_status_handling() {
+        // 不正なsync_statusがDBにある場合にエラーを返すことを確認
+        let db = Database::new(":memory:").unwrap();
+
+        let conn = db.conn.lock().unwrap();
+        conn.execute(
+            "INSERT INTO projects (code, title, description, local_updated_at, remote_updated_at, sync_status, is_deleted)
+             VALUES (?, ?, ?, ?, ?, ?, ?)",
+            params!["TEST", "Test", None::<String>, "2024-01-01T00:00:00Z", None::<String>, "invalid_status", 0],
+        ).unwrap();
+        drop(conn);
+
+        // 取得時にエラーが返されることを期待
+        let result = db.get_by_code("TEST");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_foreign_key_constraints() {
+        // 外部キー制約が有効になっていることを確認
+        let db = Database::new(":memory:").unwrap();
+
+        // 存在しないプロジェクトに紐づくテストスイートを保存しようとする
+        let suite = TestSuite {
+            id: 1,
+            project_code: "NONEXISTENT".to_string(),
+            title: "Test Suite".to_string(),
+            description: None,
+            preconditions: None,
+            parent_id: None,
+            position: 1,
+            cases_count: 0,
+            created_at: Utc::now(),
+            updated_at: Utc::now(),
+            local_updated_at: Utc::now(),
+            remote_updated_at: None,
+            sync_status: SyncStatus::Clean,
+            is_deleted: false,
+        };
+
+        // 外部キー制約違反でエラーになることを期待
+        let result = TestSuiteRepository::save(&db, &suite);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_save_steps_transaction_rollback() {
+        // save_steps中にエラーが発生した場合、トランザクションがロールバックされることを確認
+        let db = Database::new(":memory:").unwrap();
+
+        // プロジェクト、スイート、テストケースを作成
+        let project = Project {
+            code: "TEST".to_string(),
+            title: "Test Project".to_string(),
+            description: None,
+            local_updated_at: Utc::now(),
+            remote_updated_at: None,
+            sync_status: SyncStatus::Clean,
+            is_deleted: false,
+        };
+        ProjectRepository::save(&db, &project).unwrap();
+
+        let suite = TestSuite {
+            id: 1,
+            project_code: "TEST".to_string(),
+            title: "Test Suite".to_string(),
+            description: None,
+            preconditions: None,
+            parent_id: None,
+            position: 1,
+            cases_count: 0,
+            created_at: Utc::now(),
+            updated_at: Utc::now(),
+            local_updated_at: Utc::now(),
+            remote_updated_at: None,
+            sync_status: SyncStatus::Clean,
+            is_deleted: false,
+        };
+        TestSuiteRepository::save(&db, &suite).unwrap();
+
+        let test_case = TestCase {
+            id: 1,
+            project_code: "TEST".to_string(),
+            suite_id: Some(1),
+            title: "Test Case".to_string(),
+            description: None,
+            preconditions: None,
+            postconditions: None,
+            severity: 0,
+            priority: 0,
+            test_type: 0,
+            status: 0,
+            automation: 0,
+            author_id: None,
+            created_at: Utc::now(),
+            updated_at: Utc::now(),
+            local_updated_at: Utc::now(),
+            remote_updated_at: None,
+            sync_status: SyncStatus::Clean,
+            is_deleted: false,
+        };
+        TestCaseRepository::save(&db, &test_case).unwrap();
+
+        // 初期ステップを保存
+        let initial_steps = vec![TestCaseStep {
+            id: 0,
+            test_case_id: 1,
+            hash: "hash1".to_string(),
+            shared_step_hash: None,
+            position: 1,
+            action: "Initial Action".to_string(),
+            expected_result: Some("Initial Result".to_string()),
+            data: None,
+            parent_step_id: None,
+        }];
+        TestCaseRepository::save_steps(&db, 1, &initial_steps).unwrap();
+
+        // 初期ステップが保存されていることを確認
+        let steps = TestCaseRepository::get_steps(&db, 1).unwrap();
+        assert_eq!(steps.len(), 1);
+        assert_eq!(steps[0].action, "Initial Action");
     }
 }
