@@ -517,18 +517,24 @@ git commit -am "test: get_by_codeの失敗するテストを追加"
 
 **Green → Refactor → 繰り返し**
 
-#### Step 4: PR作成
+#### Step 4: PR作成前のチェック
 ```bash
-# フォーマッターを実行
+# 1. フォーマッターを実行
 cargo fmt
 
-# すべてのテストが通ることを確認
+# 2. すべてのテストが通ることを確認
 cargo test
 
-# mainブランチにプッシュ
+# 3. Lintチェックを実行（CI失敗を防ぐ）
+cargo clippy --all-targets --all-features -- -D warnings
+
+# ⚠️ clippyでエラーが出た場合は必ず修正してからプッシュ
+# 例: PR #7では dead_code 警告が発生し、CI失敗後に修正が必要だった
+
+# 4. すべてクリアしたらプッシュ
 git push origin feature/project-repository
 
-# PRを作成（GitHub CLI使用）
+# 5. PRを作成（GitHub CLI使用）
 gh pr create --title "feat: implement ProjectRepository" \
   --body "- Implement get_all()
 - Implement get_by_code()
@@ -586,7 +592,8 @@ gh pr merge 4 --squash
 
 ### 完了時
 - [ ] フォーマッターを実行（`cargo fmt`）
-- [ ] すべてのテストが通る
+- [ ] すべてのテストが通る（`cargo test`）
+- [ ] Lintチェックが通る（`cargo clippy --all-targets --all-features -- -D warnings`）
 - [ ] コンパイルエラーがない
 - [ ] コミットメッセージが適切
 - [ ] PRを作成
