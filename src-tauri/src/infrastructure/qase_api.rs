@@ -34,6 +34,35 @@ pub struct ProjectEntity {
 /// 単一プロジェクトの結果（get_project用）
 pub type ProjectResult = ProjectEntity;
 
+/// Test Suites APIのレスポンス結果
+#[derive(Debug, Serialize, Deserialize)]
+pub struct SuitesResult {
+    pub total: i32,
+    pub filtered: i32,
+    pub count: i32,
+    pub entities: Vec<SuiteEntity>,
+}
+
+/// テストスイートエンティティ
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct SuiteEntity {
+    pub id: i64,
+    pub title: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub description: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub preconditions: Option<String>,
+    pub position: i32,
+    pub cases_count: i32,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub parent_id: Option<i64>,
+    pub created_at: String,
+    pub updated_at: String,
+}
+
+/// 単一テストスイートの結果（get_suite用）
+pub type SuiteResult = SuiteEntity;
+
 impl QaseClient {
     /// 新しいQaseClientを作成
     ///
