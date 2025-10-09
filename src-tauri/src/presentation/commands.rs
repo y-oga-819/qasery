@@ -1,5 +1,10 @@
 // Tauri commands (functions called from frontend)
 
+// Phase 1実装時点ではまだTauri本体から呼び出されていないため、dead_code警告を抑制
+#![allow(dead_code)]
+// Phase 1では未実装のため、未使用パラメータの警告を抑制
+#![allow(unused_variables)]
+
 use crate::domain::models::{Project, TestCase, TestSuite};
 use anyhow::Result;
 

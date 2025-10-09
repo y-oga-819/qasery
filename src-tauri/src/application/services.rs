@@ -1,5 +1,8 @@
 // Business logic services (create, edit, delete, sync, etc.)
 
+// Phase 1実装時点ではまだPresentation層から使用されていないため、dead_code警告を抑制
+#![allow(dead_code)]
+
 use crate::domain::models::{Project, SyncStatus, TestCase, TestCaseStep, TestSuite};
 use crate::domain::repository::{ProjectRepository, TestCaseRepository, TestSuiteRepository};
 use crate::infrastructure::qase_api::{CaseEntity, ProjectEntity, QaseClient, SuiteEntity};
@@ -22,8 +25,14 @@ impl ProjectService {
     ///
     /// # Returns
     /// ProjectServiceインスタンス
-    pub fn new(repository: Arc<dyn ProjectRepository>, qase_client: Option<Arc<QaseClient>>) -> Self {
-        Self { repository, qase_client }
+    pub fn new(
+        repository: Arc<dyn ProjectRepository>,
+        qase_client: Option<Arc<QaseClient>>,
+    ) -> Self {
+        Self {
+            repository,
+            qase_client,
+        }
     }
 
     /// ローカルのプロジェクト一覧を取得
@@ -50,7 +59,9 @@ impl ProjectService {
     /// # Returns
     /// 取り込んだプロジェクト数またはエラー
     pub async fn sync_projects(&self) -> Result<usize> {
-        let client = self.qase_client.as_ref()
+        let client = self
+            .qase_client
+            .as_ref()
             .ok_or_else(|| anyhow::anyhow!("Qase API client is not configured"))?;
 
         // Qase APIからプロジェクト一覧を取得
@@ -104,8 +115,14 @@ impl TestSuiteService {
     ///
     /// # Returns
     /// TestSuiteServiceインスタンス
-    pub fn new(repository: Arc<dyn TestSuiteRepository>, qase_client: Option<Arc<QaseClient>>) -> Self {
-        Self { repository, qase_client }
+    pub fn new(
+        repository: Arc<dyn TestSuiteRepository>,
+        qase_client: Option<Arc<QaseClient>>,
+    ) -> Self {
+        Self {
+            repository,
+            qase_client,
+        }
     }
 
     /// プロジェクトのテストスイートを階層構造で取得
@@ -139,7 +156,9 @@ impl TestSuiteService {
     /// # Returns
     /// 取り込んだテストスイート数またはエラー
     pub async fn sync_suites(&self, project_code: &str) -> Result<usize> {
-        let client = self.qase_client.as_ref()
+        let client = self
+            .qase_client
+            .as_ref()
             .ok_or_else(|| anyhow::anyhow!("Qase API client is not configured"))?;
 
         // Qase APIからテストスイート一覧を取得
@@ -207,8 +226,14 @@ impl TestCaseService {
     ///
     /// # Returns
     /// TestCaseServiceインスタンス
-    pub fn new(repository: Arc<dyn TestCaseRepository>, qase_client: Option<Arc<QaseClient>>) -> Self {
-        Self { repository, qase_client }
+    pub fn new(
+        repository: Arc<dyn TestCaseRepository>,
+        qase_client: Option<Arc<QaseClient>>,
+    ) -> Self {
+        Self {
+            repository,
+            qase_client,
+        }
     }
 
     /// スイート別にテストケースを取得
@@ -252,7 +277,9 @@ impl TestCaseService {
     /// # Returns
     /// 取り込んだテストケース数またはエラー
     pub async fn sync_cases(&self, project_code: &str) -> Result<usize> {
-        let client = self.qase_client.as_ref()
+        let client = self
+            .qase_client
+            .as_ref()
             .ok_or_else(|| anyhow::anyhow!("Qase API client is not configured"))?;
 
         // Qase APIからテストケース一覧を取得
@@ -267,7 +294,7 @@ impl TestCaseService {
 
             // ステップも保存
             if let Some(steps) = &entity.steps {
-                let test_case_steps = self.convert_steps(&steps, test_case.id);
+                let test_case_steps = self.convert_steps(steps, test_case.id);
                 self.repository.save_steps(test_case.id, &test_case_steps)?;
             }
 
@@ -324,20 +351,27 @@ impl TestCaseService {
     ///
     /// # Returns
     /// TestCaseStepのリスト
-    fn convert_steps(&self, steps: &[crate::infrastructure::qase_api::TestStep], test_case_id: i64) -> Vec<TestCaseStep> {
-        steps.iter().map(|step| {
-            TestCaseStep {
-                id: 0, // Auto-increment
-                test_case_id,
-                hash: format!("step-{}-{}", test_case_id, step.position), // Phase 1では簡略化
-                shared_step_hash: step.shared_step_hash.clone(),
-                position: step.position,
-                action: step.action.clone(),
-                expected_result: step.expected_result.clone(),
-                data: step.data.clone(),
-                parent_step_id: None, // Phase 1ではネストされたステップは未対応
-            }
-        }).collect()
+    fn convert_steps(
+        &self,
+        steps: &[crate::infrastructure::qase_api::TestStep],
+        test_case_id: i64,
+    ) -> Vec<TestCaseStep> {
+        steps
+            .iter()
+            .map(|step| {
+                TestCaseStep {
+                    id: 0, // Auto-increment
+                    test_case_id,
+                    hash: format!("step-{}-{}", test_case_id, step.position), // Phase 1では簡略化
+                    shared_step_hash: step.shared_step_hash.clone(),
+                    position: step.position,
+                    action: step.action.clone(),
+                    expected_result: step.expected_result.clone(),
+                    data: step.data.clone(),
+                    parent_step_id: None, // Phase 1ではネストされたステップは未対応
+                }
+            })
+            .collect()
     }
 }
 
