@@ -11,3 +11,6 @@ export type { LayoutProps } from './Layout';
 
 export { ErrorMessage } from './ErrorMessage';
 export type { ErrorMessageProps } from './ErrorMessage';
+
+export { Modal } from './Modal';
+export type { ModalProps } from './Modal';
