@@ -1,6 +1,6 @@
 // アプリケーションルートコンポーネント
 
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Layout } from './components/common';
 import { Header } from './components/Header';
 import { ProjectList } from './components/ProjectList';
