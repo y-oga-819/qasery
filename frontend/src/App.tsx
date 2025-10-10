@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Layout } from './components/common';
 import { Header } from './components/Header';
 import { ProjectList } from './components/ProjectList';
+import { TestSuiteTree } from './components/TestSuiteTree';
 import { SettingsModal } from './components/SettingsModal';
 
 /**
@@ -17,14 +18,7 @@ function App() {
       <Layout
         header={<Header onOpenSettings={() => setIsSettingsOpen(true)} />}
         left={<ProjectList />}
-        center={
-          <div className="h-full flex items-center justify-center text-gray-500">
-            <div className="text-center">
-              <p className="text-lg mb-2">テストスイートツリー</p>
-              <p className="text-sm">Phase 2で実装予定</p>
-            </div>
-          </div>
-        }
+        center={<TestSuiteTree />}
         right={
           <div className="h-full flex items-center justify-center text-gray-500">
             <div className="text-center">
