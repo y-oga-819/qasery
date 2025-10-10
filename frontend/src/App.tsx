@@ -1,21 +1,43 @@
+// アプリケーションルートコンポーネント
+
+import { useState } from 'react';
+import { Layout } from './components/common';
+import { Header } from './components/Header';
+import { ProjectList } from './components/ProjectList';
+import { SettingsModal } from './components/SettingsModal';
+
+/**
+ * アプリケーションコンポーネント
+ */
 function App() {
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+
   return (
-    <div className="min-h-screen bg-gray-100">
-      <header className="bg-white shadow">
-        <div className="max-w-7xl mx-auto py-6 px-4">
-          <h1 className="text-3xl font-bold text-gray-900">Qasery</h1>
-        </div>
-      </header>
-      <main>
-        <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-          <div className="px-4 py-6 sm:px-0">
-            <div className="border-4 border-dashed border-gray-200 rounded-lg h-96 flex items-center justify-center">
-              <p className="text-gray-500">Welcome to Qasery - Qase IDE</p>
+    <>
+      <Layout
+        header={<Header onOpenSettings={() => setIsSettingsOpen(true)} />}
+        left={<ProjectList />}
+        center={
+          <div className="h-full flex items-center justify-center text-gray-500">
+            <div className="text-center">
+              <p className="text-lg mb-2">テストスイートツリー</p>
+              <p className="text-sm">Phase 2で実装予定</p>
             </div>
           </div>
-        </div>
-      </main>
-    </div>
+        }
+        right={
+          <div className="h-full flex items-center justify-center text-gray-500">
+            <div className="text-center">
+              <p className="text-lg mb-2">テストケースエディタ</p>
+              <p className="text-sm">Phase 3で実装予定</p>
+            </div>
+          </div>
+        }
+      />
+
+      {/* 設定モーダル */}
+      <SettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
+    </>
   );
 }
 
