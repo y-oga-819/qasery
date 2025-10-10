@@ -89,10 +89,7 @@ pub async fn get_suites_tree(
 /// # Returns
 /// テストスイートまたはエラー
 #[tauri::command]
-pub async fn get_suite(
-    state: State<'_, AppState>,
-    id: i64,
-) -> Result<Option<TestSuite>, String> {
+pub async fn get_suite(state: State<'_, AppState>, id: i64) -> Result<Option<TestSuite>, String> {
     state
         .test_suite_service
         .get_suite(id)
@@ -152,10 +149,7 @@ pub async fn get_cases_by_suite(
 /// # Returns
 /// テストケースまたはエラー
 #[tauri::command]
-pub async fn get_case(
-    state: State<'_, AppState>,
-    id: i64,
-) -> Result<Option<TestCase>, String> {
+pub async fn get_case(state: State<'_, AppState>, id: i64) -> Result<Option<TestCase>, String> {
     state
         .test_case_service
         .get_case(id)
@@ -187,10 +181,7 @@ pub async fn save_case(state: State<'_, AppState>, test_case: TestCase) -> Resul
 /// # Returns
 /// 取り込んだテストケース数またはエラー
 #[tauri::command]
-pub async fn sync_cases(
-    state: State<'_, AppState>,
-    project_code: String,
-) -> Result<usize, String> {
+pub async fn sync_cases(state: State<'_, AppState>, project_code: String) -> Result<usize, String> {
     // QaseClientを取得
     let client = state.get_qase_client().map_err(|e| e.to_string())?;
 
