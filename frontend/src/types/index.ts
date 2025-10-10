@@ -127,3 +127,19 @@ export interface TestCaseStep {
   /** 親ステップID（ネストされたステップ用） */
   parent_step_id: number | null;
 }
+
+/**
+ * テストスイートのツリー構造
+ * （階層表示用）
+ */
+export interface TestSuiteTree extends TestSuite {
+  /** 子テストスイート */
+  children: TestSuiteTree[];
+}
+
+/**
+ * Tauriコマンドのエラーレスポンス
+ */
+export interface TauriError {
+  message: string;
+}
