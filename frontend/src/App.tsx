@@ -5,6 +5,7 @@ import { Layout } from './components/common';
 import { Header } from './components/Header';
 import { ProjectList } from './components/ProjectList';
 import { TestSuiteTree } from './components/TestSuiteTree';
+import { TestCaseViewer } from './components/TestCaseViewer';
 import { SettingsModal } from './components/SettingsModal';
 
 /**
@@ -19,14 +20,7 @@ function App() {
         header={<Header onOpenSettings={() => setIsSettingsOpen(true)} />}
         left={<ProjectList />}
         center={<TestSuiteTree />}
-        right={
-          <div className="h-full flex items-center justify-center text-gray-500">
-            <div className="text-center">
-              <p className="text-lg mb-2">テストケースエディタ</p>
-              <p className="text-sm">Phase 3で実装予定</p>
-            </div>
-          </div>
-        }
+        right={<TestCaseViewer />}
       />
 
       {/* 設定モーダル */}
