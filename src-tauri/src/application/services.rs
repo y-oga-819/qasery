@@ -64,16 +64,29 @@ impl ProjectService {
             .as_ref()
             .ok_or_else(|| anyhow::anyhow!("Qase API client is not configured"))?;
 
-        // Qase APIからプロジェクト一覧を取得
-        let response = client.get_projects(None, None).await?;
-        let entities = response.result.entities;
-
-        // 各プロジェクトをローカルDBに保存
         let mut count = 0;
-        for entity in entities {
-            let project = self.convert_entity_to_project(&entity);
-            self.repository.save(&project)?;
-            count += 1;
+        let limit = 100; // 1リクエストあたりの最大取得数
+        let mut offset = 0;
+
+        loop {
+            // Qase APIからプロジェクト一覧を取得（ページング）
+            let response = client.get_projects(Some(limit), Some(offset)).await?;
+            let entities = response.result.entities;
+            let total = response.result.total;
+
+            // 各プロジェクトをローカルDBに保存
+            for entity in &entities {
+                let project = self.convert_entity_to_project(entity);
+                self.repository.save(&project)?;
+                count += 1;
+            }
+
+            // 全件取得済みなら終了
+            if offset + entities.len() as i32 >= total {
+                break;
+            }
+
+            offset += limit;
         }
 
         Ok(count)
@@ -161,16 +174,31 @@ impl TestSuiteService {
             .as_ref()
             .ok_or_else(|| anyhow::anyhow!("Qase API client is not configured"))?;
 
-        // Qase APIからテストスイート一覧を取得
-        let response = client.get_suites(project_code, None, None, None).await?;
-        let entities = response.result.entities;
-
-        // 各テストスイートをローカルDBに保存
         let mut count = 0;
-        for entity in entities {
-            let suite = self.convert_entity_to_test_suite(&entity, project_code);
-            self.repository.save(&suite)?;
-            count += 1;
+        let limit = 100; // 1リクエストあたりの最大取得数
+        let mut offset = 0;
+
+        loop {
+            // Qase APIからテストスイート一覧を取得（ページング）
+            let response = client
+                .get_suites(project_code, None, Some(limit), Some(offset))
+                .await?;
+            let entities = response.result.entities;
+            let total = response.result.total;
+
+            // 各テストスイートをローカルDBに保存
+            for entity in &entities {
+                let suite = self.convert_entity_to_test_suite(entity, project_code);
+                self.repository.save(&suite)?;
+                count += 1;
+            }
+
+            // 全件取得済みなら終了
+            if offset + entities.len() as i32 >= total {
+                break;
+            }
+
+            offset += limit;
         }
 
         Ok(count)
@@ -282,23 +310,38 @@ impl TestCaseService {
             .as_ref()
             .ok_or_else(|| anyhow::anyhow!("Qase API client is not configured"))?;
 
-        // Qase APIからテストケース一覧を取得
-        let response = client.get_cases(project_code, None, None, None).await?;
-        let entities = response.result.entities;
-
-        // 各テストケースをローカルDBに保存
         let mut count = 0;
-        for entity in entities {
-            let test_case = self.convert_entity_to_test_case(&entity, project_code);
-            self.repository.save(&test_case)?;
+        let limit = 100; // 1リクエストあたりの最大取得数
+        let mut offset = 0;
 
-            // ステップも保存
-            if let Some(steps) = &entity.steps {
-                let test_case_steps = self.convert_steps(steps, test_case.id);
-                self.repository.save_steps(test_case.id, &test_case_steps)?;
+        loop {
+            // Qase APIからテストケース一覧を取得（ページング）
+            let response = client
+                .get_cases(project_code, None, Some(limit), Some(offset))
+                .await?;
+            let entities = response.result.entities;
+            let total = response.result.total;
+
+            // 各テストケースをローカルDBに保存
+            for entity in &entities {
+                let test_case = self.convert_entity_to_test_case(entity, project_code);
+                self.repository.save(&test_case)?;
+
+                // ステップも保存
+                if let Some(steps) = &entity.steps {
+                    let test_case_steps = self.convert_steps(steps, test_case.id);
+                    self.repository.save_steps(test_case.id, &test_case_steps)?;
+                }
+
+                count += 1;
             }
 
-            count += 1;
+            // 全件取得済みなら終了
+            if offset + entities.len() as i32 >= total {
+                break;
+            }
+
+            offset += limit;
         }
 
         Ok(count)
