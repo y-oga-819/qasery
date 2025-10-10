@@ -12,6 +12,7 @@ use std::sync::{Arc, Mutex};
 
 /// アプリケーション全体の状態を管理
 pub struct AppState {
+    pub db: Arc<Database>,
     pub project_service: Arc<ProjectService>,
     pub test_suite_service: Arc<TestSuiteService>,
     pub test_case_service: Arc<TestCaseService>,
@@ -36,6 +37,7 @@ impl AppState {
         let test_case_service = Arc::new(TestCaseService::new(db.clone(), None));
 
         Ok(Self {
+            db,
             project_service,
             test_suite_service,
             test_case_service,
