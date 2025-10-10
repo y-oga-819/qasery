@@ -2,8 +2,8 @@
 
 import React, { useEffect } from 'react';
 import { useStore } from '../store';
-import { listProjects, syncProjects } from '../services/tauri';
-import { Button, Spinner, ErrorMessage } from './common';
+import { listProjects } from '../services/tauri';
+import { Spinner, ErrorMessage } from './common';
 import type { Project } from '../types';
 
 /**
@@ -34,23 +34,6 @@ export const ProjectList: React.FC = () => {
   };
 
   /**
-   * プロジェクトを同期
-   */
-  const handleSync = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const count = await syncProjects();
-      await loadProjects();
-      console.log(`${count}件のプロジェクトを同期しました`);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'プロジェクトの同期に失敗しました');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  /**
    * プロジェクトを選択
    */
   const handleSelectProject = (project: Project) => {
@@ -61,12 +44,7 @@ export const ProjectList: React.FC = () => {
     <div className="h-full flex flex-col">
       {/* ヘッダー */}
       <div className="p-4 border-b border-gray-200">
-        <div className="flex items-center justify-between mb-2">
-          <h2 className="text-lg font-semibold text-gray-800">プロジェクト</h2>
-          <Button onClick={handleSync} variant="secondary" disabled={loading} size="sm">
-            同期
-          </Button>
-        </div>
+        <h2 className="text-lg font-semibold text-gray-800">プロジェクト</h2>
       </div>
 
       {/* エラー表示 */}
@@ -89,7 +67,7 @@ export const ProjectList: React.FC = () => {
           {projects.length === 0 ? (
             <div className="p-4 text-center text-gray-500">
               <p>プロジェクトがありません</p>
-              <p className="text-sm mt-2">「同期」ボタンでQaseから取得してください</p>
+              <p className="text-sm mt-2">ヘッダーの「同期」ボタンでQaseから取得してください</p>
             </div>
           ) : (
             <ul>

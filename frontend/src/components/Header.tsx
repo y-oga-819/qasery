@@ -2,6 +2,9 @@
 
 import React, { useState } from 'react';
 import { useStore } from '../store';
+import { useSyncProjects } from '../hooks/useProjects';
+import { useSyncSuites } from '../hooks/useTestSuites';
+import { useSyncCases } from '../hooks/useTestCases';
 import { Button } from './common';
 import type { Project } from '../types';
 
@@ -19,6 +22,9 @@ export interface HeaderProps {
 export const Header: React.FC<HeaderProps> = ({ onOpenSettings }) => {
   const { projects, selectedProject, selectProject } = useStore();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const { syncProjects, loading: syncingProjects } = useSyncProjects();
+  const { syncSuites, loading: syncingSuites } = useSyncSuites();
+  const { syncCases, loading: syncingCases } = useSyncCases();
 
   /**
    * プロジェクトを選択
@@ -27,6 +33,23 @@ export const Header: React.FC<HeaderProps> = ({ onOpenSettings }) => {
     selectProject(project);
     setIsDropdownOpen(false);
   };
+
+  /**
+   * 同期ボタンのハンドラ
+   */
+  const handleSync = async () => {
+    if (selectedProject) {
+      // 選択中プロジェクトのスイートとケースを再同期
+      await syncSuites(selectedProject.code);
+      await syncCases(selectedProject.code);
+    } else {
+      // プロジェクト一覧のみ同期
+      await syncProjects();
+    }
+  };
+
+  // いずれかの同期処理が実行中か
+  const isSyncing = syncingProjects || syncingSuites || syncingCases;
 
   return (
     <div className="px-6 py-4 flex items-center justify-between">
@@ -101,8 +124,17 @@ export const Header: React.FC<HeaderProps> = ({ onOpenSettings }) => {
         </div>
       </div>
 
-      {/* 右側: 設定ボタン */}
+      {/* 右側: 同期ボタン・設定ボタン */}
       <div className="flex items-center gap-2">
+        <Button
+          variant="secondary"
+          size="sm"
+          onClick={handleSync}
+          loading={isSyncing}
+          disabled={isSyncing}
+        >
+          {isSyncing ? '同期中...' : '同期'}
+        </Button>
         <Button variant="secondary" size="sm" onClick={onOpenSettings}>
           設定
         </Button>
