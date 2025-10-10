@@ -115,61 +115,75 @@ Qaseとの基本的な連携とローカルでのCRUD操作
   - [x] `save_steps()` - ステップ保存
 
 ##### 2.2.2 qase_api.rs - Qase API Client
-- [ ] API Clientの初期化（APIトークン管理）
-- [ ] Projects API
-  - [ ] `get_projects()` - 全プロジェクト取得
-  - [ ] `get_project(code)` - プロジェクト詳細取得
-- [ ] Test Suites API
-  - [ ] `get_suites(project_code)` - スイート一覧取得
-  - [ ] `get_suite(project_code, id)` - スイート詳細取得
-- [ ] Test Cases API
-  - [ ] `get_cases(project_code)` - ケース一覧取得
-  - [ ] `get_case(project_code, id)` - ケース詳細取得
-- [ ] エラーハンドリング
-  - [ ] APIレスポンスのパース
-  - [ ] レート制限の考慮
-  - [ ] ネットワークエラーハンドリング
+- [x] API Clientの初期化（APIトークン管理）
+- [x] Projects API
+  - [x] `get_projects()` - 全プロジェクト取得
+  - [x] `get_project(code)` - プロジェクト詳細取得
+- [x] Test Suites API
+  - [x] `get_suites(project_code)` - スイート一覧取得
+  - [x] `get_suite(project_code, id)` - スイート詳細取得
+- [x] Test Cases API
+  - [x] `get_cases(project_code)` - ケース一覧取得
+  - [x] `get_case(project_code, id)` - ケース詳細取得
+- [x] エラーハンドリング
+  - [x] APIレスポンスのパース
+  - [x] レート制限の考慮
+  - [x] ネットワークエラーハンドリング
 
 #### 2.3 Application層（backend/src/application/）
 
 ##### 2.3.1 services.rs - ビジネスロジック
-- [ ] `ProjectService`
-  - [ ] `list_projects()` - ローカルのプロジェクト一覧取得
-  - [ ] `get_project(code)` - プロジェクト詳細取得
-  - [ ] `sync_projects()` - Qaseからプロジェクト取り込み
-- [ ] `TestSuiteService`
-  - [ ] `get_suites_tree(project_code)` - 階層構造で取得
-  - [ ] `get_suite(id)` - スイート詳細取得
-  - [ ] `sync_suites(project_code)` - Qaseからスイート取り込み
-- [ ] `TestCaseService`
-  - [ ] `get_cases_by_suite(suite_id)` - スイート別ケース取得
-  - [ ] `get_case(id)` - ケース詳細取得（ステップ含む）
-  - [ ] `save_case(test_case)` - ケース保存（local_modified設定）
-  - [ ] `sync_cases(project_code)` - Qaseからケース取り込み
-- [ ] 同期ロジック（Pull用）
-  - [ ] APIから取得したデータとローカルDBを比較
-  - [ ] `updated_at`の比較で差分検出
-  - [ ] `sync_status`の更新
+- [x] `ProjectService`
+  - [x] `list_projects()` - ローカルのプロジェクト一覧取得
+  - [x] `get_project(code)` - プロジェクト詳細取得
+  - [x] `sync_projects()` - Qaseからプロジェクト取り込み
+- [x] `TestSuiteService`
+  - [x] `get_suites_tree(project_code)` - 階層構造で取得
+  - [x] `get_suite(id)` - スイート詳細取得
+  - [x] `sync_suites(project_code)` - Qaseからスイート取り込み
+- [x] `TestCaseService`
+  - [x] `get_cases_by_suite(suite_id)` - スイート別ケース取得
+  - [x] `get_case(id)` - ケース詳細取得（ステップ含む）
+  - [x] `save_case(test_case)` - ケース保存（local_modified設定）
+  - [x] `sync_cases(project_code)` - Qaseからケース取り込み
+- [x] 同期ロジック（Pull用）
+  - [x] APIから取得したデータとローカルDBを比較
+  - [x] `updated_at`の比較で差分検出
+  - [x] `sync_status`の更新
+
+##### 2.3.2 appstate.rs - アプリケーション状態管理
+- [x] `AppState` struct
+  - [x] データベース接続の管理
+  - [x] 各Serviceインスタンスの保持
+  - [x] APIトークンの管理
+- [x] 初期化機能（`new()`）
+- [x] APIトークン設定・取得機能
+- [x] QaseClient取得機能
 
 #### 2.4 Presentation層（backend/src/presentation/）
 
 ##### 2.4.1 commands.rs - Tauriコマンド
-- [ ] プロジェクト関連コマンド
-  - [ ] `list_projects()` - プロジェクト一覧
-  - [ ] `get_project(code)` - プロジェクト取得
-  - [ ] `sync_projects()` - プロジェクト同期
-- [ ] テストスイート関連コマンド
-  - [ ] `get_suites_tree(project_code)` - ツリー取得
-  - [ ] `get_suite(id)` - スイート取得
-  - [ ] `sync_suites(project_code)` - スイート同期
-- [ ] テストケース関連コマンド
-  - [ ] `get_cases_by_suite(suite_id)` - ケース一覧
-  - [ ] `get_case(id)` - ケース詳細
-  - [ ] `save_case(test_case)` - ケース保存
-  - [ ] `sync_cases(project_code)` - ケース同期
-- [ ] 設定関連コマンド
-  - [ ] `save_api_token(token)` - APIトークン保存
-  - [ ] `get_api_token()` - APIトークン取得
+- [x] プロジェクト関連コマンド
+  - [x] `list_projects()` - プロジェクト一覧
+  - [x] `get_project(code)` - プロジェクト取得
+  - [x] `sync_projects()` - プロジェクト同期
+- [x] テストスイート関連コマンド
+  - [x] `get_suites_tree(project_code)` - ツリー取得
+  - [x] `get_suite(id)` - スイート取得
+  - [x] `sync_suites(project_code)` - スイート同期
+- [x] テストケース関連コマンド
+  - [x] `get_cases_by_suite(suite_id)` - ケース一覧
+  - [x] `get_case(id)` - ケース詳細
+  - [x] `save_case(test_case)` - ケース保存
+  - [x] `sync_cases(project_code)` - ケース同期
+- [x] 設定関連コマンド
+  - [x] `save_api_token(token)` - APIトークン保存
+  - [x] `get_api_token()` - APIトークン取得
+
+##### 2.4.2 main.rs - Tauriアプリケーション初期化
+- [x] AppStateの初期化とTauriへの登録
+- [x] 全Tauriコマンドのinvoke_handlerへの登録
+- [x] アプリケーション起動処理
 
 ---
 
@@ -399,10 +413,26 @@ Qaseとの基本的な連携とローカルでのCRUD操作
 
 ## 進捗管理
 
-- [ ] 第1優先グループ完了
-- [ ] 第2優先グループ完了
-- [ ] 第3優先グループ完了
-- [ ] 第4優先グループ完了
+### バックエンド実装状況
+- [x] **第1優先グループ（バックエンド部分）完了** - PR #12
+  - Domain層完全実装
+  - Infrastructure層完全実装
+  - Application層完全実装（AppState追加）
+  - Presentation層完全実装（全Tauriコマンド）
+  - テスト: 25件すべて成功
+
+### フロントエンド実装状況
+- [ ] 第1優先グループ（フロントエンド部分）
+- [ ] 第2優先グループ
+- [ ] 第3優先グループ
+- [ ] 第4優先グループ
+
+### 完了したPR
+- [PR #12](https://github.com/y-oga-819/qasery/pull/12): Tauriコマンドとアプリケーション状態管理を実装
+  - AppState構造体の実装
+  - 12個のTauriコマンドの実装
+  - main.rsでの初期化と登録
+  - CI: Format ✅, Lint ✅, Test ✅
 
 ---
 
