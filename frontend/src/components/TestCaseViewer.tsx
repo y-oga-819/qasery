@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import { useStore } from '../store';
-import { useTestCases, useSyncCases } from '../hooks/useTestCases';
+import { useTestCases } from '../hooks/useTestCases';
 import { Button, Spinner, ErrorMessage } from './common';
 
 /**
@@ -12,16 +12,11 @@ import { Button, Spinner, ErrorMessage } from './common';
 export function TestCaseViewer() {
   const { selectedSuite, selectedCase, selectCase } = useStore();
   const { cases, loading, error } = useTestCases(selectedSuite?.id || null);
-  const { syncCases, loading: syncing } = useSyncCases();
 
   // スイートが変更されたら選択をクリア
   useEffect(() => {
     selectCase(null);
   }, [selectedSuite, selectCase]);
-
-  const handleSync = async () => {
-    await syncCases();
-  };
 
   if (!selectedSuite) {
     return (
@@ -54,17 +49,7 @@ export function TestCaseViewer() {
     <div className="h-full flex flex-col">
       {/* ヘッダー */}
       <div className="p-4 border-b border-gray-200">
-        <div className="flex items-center justify-between mb-2">
-          <h2 className="text-lg font-semibold text-gray-800">テストケース</h2>
-          <Button
-            onClick={handleSync}
-            disabled={syncing}
-            variant="secondary"
-            size="sm"
-          >
-            {syncing ? '同期中...' : '同期'}
-          </Button>
-        </div>
+        <h2 className="text-lg font-semibold text-gray-800 mb-2">テストケース</h2>
         <p className="text-sm text-gray-600">
           スイート: <span className="font-medium">{selectedSuite.title}</span>
         </p>
@@ -76,7 +61,7 @@ export function TestCaseViewer() {
           <div className="h-full flex items-center justify-center text-gray-500">
             <div className="text-center p-8">
               <p className="mb-2">テストケースがありません</p>
-              <p className="text-sm">「同期」ボタンでQaseからテストケースを取り込めます</p>
+              <p className="text-sm">ヘッダーの「同期」ボタンでQaseからテストケースを取り込めます</p>
             </div>
           </div>
         ) : selectedCase ? (
