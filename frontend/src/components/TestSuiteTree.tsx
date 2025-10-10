@@ -2,8 +2,8 @@
 
 import { useEffect } from 'react';
 import { useStore } from '../store';
-import { useTestSuites, useSyncSuites } from '../hooks/useTestSuites';
-import { Button, Spinner, ErrorMessage } from './common';
+import { useTestSuites } from '../hooks/useTestSuites';
+import { Spinner, ErrorMessage } from './common';
 import type { TestSuite } from '../types';
 
 /**
@@ -12,16 +12,11 @@ import type { TestSuite } from '../types';
 export function TestSuiteTree() {
   const { selectedProject, selectedSuite, selectSuite } = useStore();
   const { suites, loading, error } = useTestSuites(selectedProject?.code || null);
-  const { syncSuites, loading: syncing } = useSyncSuites();
 
   // プロジェクトが変更されたら選択をクリア
   useEffect(() => {
     selectSuite(null);
   }, [selectedProject, selectSuite]);
-
-  const handleSync = async () => {
-    await syncSuites();
-  };
 
   const handleSuiteClick = (suite: TestSuite) => {
     selectSuite(suite);
@@ -57,16 +52,8 @@ export function TestSuiteTree() {
   return (
     <div className="h-full flex flex-col">
       {/* ヘッダー */}
-      <div className="p-4 border-b border-gray-200 flex items-center justify-between">
+      <div className="p-4 border-b border-gray-200">
         <h2 className="text-lg font-semibold text-gray-800">テストスイート</h2>
-        <Button
-          onClick={handleSync}
-          disabled={syncing}
-          variant="secondary"
-          size="sm"
-        >
-          {syncing ? '同期中...' : '同期'}
-        </Button>
       </div>
 
       {/* スイート一覧 */}
@@ -74,7 +61,7 @@ export function TestSuiteTree() {
         {suites.length === 0 ? (
           <div className="text-center text-gray-500 py-8">
             <p className="mb-2">テストスイートがありません</p>
-            <p className="text-sm">「同期」ボタンでQaseからテストスイートを取り込めます</p>
+            <p className="text-sm">ヘッダーの「同期」ボタンでQaseからテストスイートを取り込めます</p>
           </div>
         ) : (
           <div className="space-y-1">
