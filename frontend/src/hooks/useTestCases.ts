@@ -113,7 +113,7 @@ export function useSaveTestCase() {
  * @returns 同期関数とローディング・エラー状態
  */
 export function useSyncCases() {
-  const { selectedProject, setCases, loading, error, setLoading, setError } = useStore();
+  const { selectedProject, loading, error, setLoading, setError } = useStore();
 
   const syncCases = async (projectCode?: string) => {
     const code = projectCode || selectedProject?.code;
