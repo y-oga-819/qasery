@@ -186,10 +186,7 @@ pub async fn get_case_steps(
     state: State<'_, AppState>,
     test_case_id: i64,
 ) -> Result<Vec<TestCaseStep>, String> {
-    state
-        .db
-        .get_steps(test_case_id)
-        .map_err(|e| e.to_string())
+    state.db.get_steps(test_case_id).map_err(|e| e.to_string())
 }
 
 /// Qaseからテストケースを同期
