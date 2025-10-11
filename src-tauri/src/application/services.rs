@@ -8,6 +8,7 @@ use crate::domain::repository::{ProjectRepository, TestCaseRepository, TestSuite
 use crate::infrastructure::qase_api::{CaseEntity, ProjectEntity, QaseClient, SuiteEntity};
 use anyhow::Result;
 use chrono::Utc;
+use std::collections::HashMap;
 use std::sync::Arc;
 
 /// プロジェクトサービス
@@ -144,10 +145,84 @@ impl TestSuiteService {
     /// * `project_code` - プロジェクトコード
     ///
     /// # Returns
-    /// テストスイート一覧またはエラー
+    /// テストスイート一覧（階層構造）またはエラー
     pub fn get_suites_tree(&self, project_code: &str) -> Result<Vec<TestSuite>> {
-        // Phase 1では単純なリスト取得（階層構造は後で実装）
-        self.repository.get_by_project(project_code)
+        let all_suites = self.repository.get_by_project(project_code)?;
+        Ok(self.build_tree(all_suites))
+    }
+
+    /// フラットなスイートリストをツリー構造に変換
+    ///
+    /// # Arguments
+    /// * `suites` - フラットなテストスイートリスト
+    ///
+    /// # Returns
+    /// ツリー構造のテストスイートリスト（ルートノードのみ）
+    fn build_tree(&self, suites: Vec<TestSuite>) -> Vec<TestSuite> {
+        // すべてのスイートをIDでマップに格納（childrenは空）
+        let mut suite_map: HashMap<i64, TestSuite> = HashMap::new();
+        for suite in suites {
+            suite_map.insert(suite.id, suite);
+        }
+
+        // すべてのIDを保存（後でイテレーションするため）
+        let all_ids: Vec<i64> = suite_map.keys().copied().collect();
+
+        // 親子関係を構築（2パスアプローチ）
+        // パス1: 各スイートの子を特定
+        let mut children_map: HashMap<i64, Vec<i64>> = HashMap::new();
+        for id in &all_ids {
+            if let Some(suite) = suite_map.get(id) {
+                if let Some(parent_id) = suite.parent_id {
+                    children_map.entry(parent_id).or_default().push(*id);
+                }
+            }
+        }
+
+        // パス2: 親から子を取得してツリーを構築（再帰的に）
+        let mut root_suites = Vec::new();
+        for id in &all_ids {
+            if let Some(suite) = suite_map.get(id) {
+                if suite.parent_id.is_none() {
+                    // ルートノードの場合、再帰的に子を構築
+                    let mut root_suite = suite.clone();
+                    Self::attach_children(&mut root_suite, &suite_map, &children_map);
+                    root_suites.push(root_suite);
+                }
+            }
+        }
+
+        // ルートノードをpositionでソート
+        root_suites.sort_by_key(|s| s.position);
+
+        root_suites
+    }
+
+    /// スイートに子スイートを再帰的にアタッチ
+    ///
+    /// # Arguments
+    /// * `suite` - 親スイート
+    /// * `suite_map` - すべてのスイートのマップ
+    /// * `children_map` - 親ID → 子IDリストのマップ
+    fn attach_children(
+        suite: &mut TestSuite,
+        suite_map: &HashMap<i64, TestSuite>,
+        children_map: &HashMap<i64, Vec<i64>>,
+    ) {
+        if let Some(child_ids) = children_map.get(&suite.id) {
+            let mut children = Vec::new();
+            for child_id in child_ids {
+                if let Some(child) = suite_map.get(child_id) {
+                    let mut child_suite = child.clone();
+                    // 再帰的に子の子をアタッチ
+                    Self::attach_children(&mut child_suite, suite_map, children_map);
+                    children.push(child_suite);
+                }
+            }
+            // positionでソート
+            children.sort_by_key(|s| s.position);
+            suite.children = Some(children);
+        }
     }
 
     /// テストスイートを取得
@@ -235,6 +310,7 @@ impl TestSuiteService {
             remote_updated_at: Some(updated_at),
             sync_status: SyncStatus::Clean,
             is_deleted: false,
+            children: None,
         }
     }
 }

@@ -3,6 +3,7 @@
 import { useEffect } from 'react';
 import { useStore } from '../store';
 import { useTestCases } from '../hooks/useTestCases';
+import { useTestSteps } from '../hooks/useTestSteps';
 import { Button, Spinner, ErrorMessage } from './common';
 
 /**
@@ -115,6 +116,7 @@ function TestCaseList({ cases, onSelect }: TestCaseListProps) {
  */
 function TestCaseDetail() {
   const { selectedCase, selectCase } = useStore();
+  const { steps, loading: stepsLoading, error: stepsError } = useTestSteps(selectedCase?.id || null);
 
   if (!selectedCase) {
     return null;
@@ -195,6 +197,57 @@ function TestCaseDetail() {
               </dd>
             </div>
           </dl>
+        </div>
+
+        {/* テストステップ */}
+        <div>
+          <h4 className="text-sm font-semibold text-gray-700 mb-3">テストステップ</h4>
+          {stepsLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <Spinner />
+            </div>
+          ) : stepsError ? (
+            <ErrorMessage message={stepsError} />
+          ) : steps.length === 0 ? (
+            <p className="text-sm text-gray-500 text-center py-4">テストステップがありません</p>
+          ) : (
+            <div className="space-y-3">
+              {steps.map((step, index) => (
+                <div key={step.id} className="border border-gray-200 rounded-lg p-4 bg-white">
+                  <div className="flex items-start gap-4">
+                    <div className="flex-shrink-0 w-8 h-8 bg-blue-100 text-blue-800 rounded-full flex items-center justify-center font-semibold text-sm">
+                      {index + 1}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="mb-2">
+                        <h5 className="text-xs font-semibold text-gray-500 uppercase mb-1">アクション</h5>
+                        <p className="text-sm text-gray-900 whitespace-pre-wrap">{step.action}</p>
+                      </div>
+                      {step.expected_result && (
+                        <div className="mb-2">
+                          <h5 className="text-xs font-semibold text-gray-500 uppercase mb-1">期待結果</h5>
+                          <p className="text-sm text-gray-900 whitespace-pre-wrap">{step.expected_result}</p>
+                        </div>
+                      )}
+                      {step.data && (
+                        <div>
+                          <h5 className="text-xs font-semibold text-gray-500 uppercase mb-1">データ</h5>
+                          <p className="text-sm text-gray-600 whitespace-pre-wrap">{step.data}</p>
+                        </div>
+                      )}
+                      {step.shared_step_hash && (
+                        <div className="mt-2">
+                          <span className="inline-block px-2 py-1 text-xs bg-purple-100 text-purple-800 rounded">
+                            Shared Step
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* 編集機能は Phase 2 で実装 */}

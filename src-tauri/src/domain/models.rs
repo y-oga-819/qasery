@@ -56,6 +56,9 @@ pub struct TestSuite {
     pub sync_status: SyncStatus,
     /// 削除フラグ
     pub is_deleted: bool,
+    /// 子スイート（階層構造表示用）
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub children: Option<Vec<TestSuite>>,
 }
 
 /// テストケース
@@ -180,6 +183,7 @@ mod tests {
             remote_updated_at: None,
             sync_status: SyncStatus::Clean,
             is_deleted: false,
+            children: None,
         };
 
         assert_eq!(test_suite.id, 1);
