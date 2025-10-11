@@ -3,9 +3,15 @@
 // Phase 1実装時点ではまだPresentation層から使用されていないため、dead_code警告を抑制
 #![allow(dead_code)]
 
-use crate::domain::models::{Project, SyncStatus, TestCase, TestCaseStep, TestSuite};
-use crate::domain::repository::{ProjectRepository, TestCaseRepository, TestSuiteRepository};
-use crate::infrastructure::qase_api::{CaseEntity, ProjectEntity, QaseClient, SuiteEntity};
+use crate::domain::models::{
+    Project, SharedStep, SharedStepStep, SyncStatus, TestCase, TestCaseStep, TestSuite,
+};
+use crate::domain::repository::{
+    ProjectRepository, SharedStepRepository, TestCaseRepository, TestSuiteRepository,
+};
+use crate::infrastructure::qase_api::{
+    CaseEntity, ProjectEntity, QaseClient, SharedStepEntity, SuiteEntity,
+};
 use anyhow::Result;
 use chrono::Utc;
 use std::collections::HashMap;
@@ -489,6 +495,181 @@ impl TestCaseService {
                     data: step.data.clone(),
                     parent_step_id: None, // Phase 1ではネストされたステップは未対応
                 }
+            })
+            .collect()
+    }
+}
+
+/// Shared Stepサービス
+pub struct SharedStepService {
+    repository: Arc<dyn SharedStepRepository>,
+    qase_client: Option<Arc<QaseClient>>,
+}
+
+impl SharedStepService {
+    /// 新しいSharedStepServiceを作成
+    ///
+    /// # Arguments
+    /// * `repository` - Shared Stepリポジトリ
+    /// * `qase_client` - Qase APIクライアント（Optional）
+    ///
+    /// # Returns
+    /// SharedStepServiceインスタンス
+    pub fn new(
+        repository: Arc<dyn SharedStepRepository>,
+        qase_client: Option<Arc<QaseClient>>,
+    ) -> Self {
+        Self {
+            repository,
+            qase_client,
+        }
+    }
+
+    /// プロジェクトのShared Stepを取得
+    ///
+    /// # Arguments
+    /// * `project_code` - プロジェクトコード
+    ///
+    /// # Returns
+    /// Shared Step一覧またはエラー
+    pub fn get_shared_steps_by_project(&self, project_code: &str) -> Result<Vec<SharedStep>> {
+        self.repository.get_by_project(project_code)
+    }
+
+    /// Shared Stepをハッシュで取得
+    ///
+    /// # Arguments
+    /// * `hash` - Shared StepハッシュID
+    ///
+    /// # Returns
+    /// Shared Stepまたはエラー
+    pub fn get_shared_step(&self, hash: &str) -> Result<Option<SharedStep>> {
+        self.repository.get_by_hash(hash)
+    }
+
+    /// Shared Stepのステップを取得
+    ///
+    /// # Arguments
+    /// * `hash` - Shared StepハッシュID
+    ///
+    /// # Returns
+    /// ステップ一覧またはエラー
+    pub fn get_shared_step_steps(&self, hash: &str) -> Result<Vec<SharedStepStep>> {
+        self.repository.get_steps(hash)
+    }
+
+    /// QaseからShared Stepを取り込み
+    ///
+    /// # Arguments
+    /// * `project_code` - プロジェクトコード
+    ///
+    /// # Returns
+    /// 取り込んだShared Step数またはエラー
+    pub async fn sync_shared_steps(&self, project_code: &str) -> Result<usize> {
+        let client = self
+            .qase_client
+            .as_ref()
+            .ok_or_else(|| anyhow::anyhow!("Qase API client is not configured"))?;
+
+        let mut count = 0;
+        let limit = 100; // 1リクエストあたりの最大取得数
+        let mut offset = 0;
+
+        loop {
+            // Qase APIからShared Step一覧を取得（ページング）
+            let response = client
+                .get_shared_steps(project_code, None, Some(limit), Some(offset))
+                .await?;
+            let entities = response.result.entities;
+            let total = response.result.total;
+
+            // 各Shared StepをローカルDBに保存
+            for entity in &entities {
+                let shared_step = self.convert_entity_to_shared_step(entity, project_code);
+                self.repository.save(&shared_step)?;
+
+                // Shared Step内のステップも保存
+                if let Some(steps) = &entity.steps {
+                    let shared_step_steps = self.convert_steps(steps, &shared_step.hash);
+                    self.repository
+                        .save_steps(&shared_step.hash, &shared_step_steps)?;
+                }
+
+                count += 1;
+            }
+
+            // 全件取得済みなら終了
+            if offset + entities.len() as i32 >= total {
+                break;
+            }
+
+            offset += limit;
+        }
+
+        Ok(count)
+    }
+
+    /// SharedStepEntityをSharedStepに変換
+    ///
+    /// # Arguments
+    /// * `entity` - Qase APIから取得したShared Stepエンティティ
+    /// * `project_code` - プロジェクトコード
+    ///
+    /// # Returns
+    /// SharedStepモデル
+    fn convert_entity_to_shared_step(
+        &self,
+        entity: &SharedStepEntity,
+        project_code: &str,
+    ) -> SharedStep {
+        let now = Utc::now();
+
+        // Qase APIのcreated_at/updated_atはISO 8601形式の文字列
+        // Phase 1では簡略化のため、パースエラーは現在時刻にフォールバック
+        let created_at = entity.created_at.parse().unwrap_or(now);
+        let updated_at = entity.updated_at.parse().unwrap_or(now);
+
+        SharedStep {
+            hash: entity.hash.clone(),
+            project_code: project_code.to_string(),
+            title: entity.title.clone(),
+            action: entity.action.clone(),
+            expected_result: entity.expected_result.clone().unwrap_or_default(),
+            cases_count: entity.cases_count,
+            created_at,
+            updated_at,
+            local_updated_at: now,
+            remote_updated_at: Some(updated_at),
+            sync_status: SyncStatus::Clean,
+            is_deleted: false,
+        }
+    }
+
+    /// Qase APIのステップをSharedStepStepに変換
+    ///
+    /// # Arguments
+    /// * `steps` - Qase APIから取得したステップ
+    /// * `shared_step_hash` - Shared StepハッシュID
+    ///
+    /// # Returns
+    /// SharedStepStepのリスト
+    fn convert_steps(
+        &self,
+        steps: &[crate::infrastructure::qase_api::SharedStepStep],
+        shared_step_hash: &str,
+    ) -> Vec<SharedStepStep> {
+        steps
+            .iter()
+            .enumerate()
+            .map(|(index, step)| SharedStepStep {
+                id: 0, // Auto-increment
+                shared_step_hash: shared_step_hash.to_string(),
+                hash: step.hash.clone(),
+                position: (index + 1) as i32, // APIにpositionがないので、配列インデックスから生成
+                action: step.action.clone(),
+                expected_result: step.expected_result.clone(),
+                data: step.data.clone(),
+                parent_step_id: None, // Phase 1ではネストされたステップは未対応
             })
             .collect()
     }

@@ -5,9 +5,11 @@
 #![allow(unused_variables)]
 
 use crate::application::appstate::AppState;
-use crate::application::services::{ProjectService, TestCaseService, TestSuiteService};
-use crate::domain::models::{Project, TestCase, TestCaseStep, TestSuite};
-use crate::domain::repository::TestCaseRepository;
+use crate::application::services::{
+    ProjectService, SharedStepService, TestCaseService, TestSuiteService,
+};
+use crate::domain::models::{Project, SharedStep, TestCase, TestCaseStep, TestSuite};
+use crate::domain::repository::{SharedStepRepository, TestCaseRepository};
 use tauri::State;
 
 /// プロジェクト一覧を取得
@@ -186,7 +188,7 @@ pub async fn get_case_steps(
     state: State<'_, AppState>,
     test_case_id: i64,
 ) -> Result<Vec<TestCaseStep>, String> {
-    state.db.get_steps(test_case_id).map_err(|e| e.to_string())
+    TestCaseRepository::get_steps(&*state.db, test_case_id).map_err(|e| e.to_string())
 }
 
 /// Qaseからテストケースを同期
@@ -234,4 +236,61 @@ pub async fn save_api_token(state: State<'_, AppState>, token: String) -> Result
 #[tauri::command]
 pub async fn get_api_token(state: State<'_, AppState>) -> Result<Option<String>, String> {
     state.get_api_token().map_err(|e| e.to_string())
+}
+
+/// プロジェクトのShared Step一覧を取得
+///
+/// # Arguments
+/// * `state` - アプリケーション状態
+/// * `project_code` - プロジェクトコード
+///
+/// # Returns
+/// Shared Step一覧またはエラー
+#[tauri::command]
+pub async fn get_shared_steps(
+    state: State<'_, AppState>,
+    project_code: String,
+) -> Result<Vec<SharedStep>, String> {
+    state
+        .db
+        .get_by_project(&project_code)
+        .map_err(|e| e.to_string())
+}
+
+/// Shared Stepをハッシュで取得
+///
+/// # Arguments
+/// * `state` - アプリケーション状態
+/// * `hash` - Shared StepハッシュID
+///
+/// # Returns
+/// Shared Stepまたはエラー
+#[tauri::command]
+pub async fn get_shared_step(
+    state: State<'_, AppState>,
+    hash: String,
+) -> Result<Option<SharedStep>, String> {
+    state.db.get_by_hash(&hash).map_err(|e| e.to_string())
+}
+
+/// QaseからShared Stepを同期
+///
+/// # Arguments
+/// * `state` - アプリケーション状態
+/// * `project_code` - プロジェクトコード
+///
+/// # Returns
+/// 取り込んだShared Step数またはエラー
+#[tauri::command]
+pub async fn sync_shared_steps(
+    state: State<'_, AppState>,
+    project_code: String,
+) -> Result<usize, String> {
+    let client = state.get_qase_client().map_err(|e| e.to_string())?;
+    let service = SharedStepService::new(state.db.clone(), Some(client));
+
+    service
+        .sync_shared_steps(&project_code)
+        .await
+        .map_err(|e| e.to_string())
 }

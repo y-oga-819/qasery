@@ -5,6 +5,7 @@ import { useStore } from '../store';
 import { useSyncProjects } from '../hooks/useProjects';
 import { useSyncSuites } from '../hooks/useTestSuites';
 import { useSyncCases } from '../hooks/useTestCases';
+import { useSyncSharedSteps } from '../hooks/useSyncSharedSteps';
 import { Button } from './common';
 import type { Project } from '../types';
 
@@ -25,6 +26,7 @@ export const Header: React.FC<HeaderProps> = ({ onOpenSettings }) => {
   const { syncProjects, loading: syncingProjects } = useSyncProjects();
   const { syncSuites, loading: syncingSuites } = useSyncSuites();
   const { syncCases, loading: syncingCases } = useSyncCases();
+  const { syncSharedSteps, loading: syncingSharedSteps } = useSyncSharedSteps();
 
   /**
    * プロジェクトを選択
@@ -39,9 +41,12 @@ export const Header: React.FC<HeaderProps> = ({ onOpenSettings }) => {
    */
   const handleSync = async () => {
     if (selectedProject) {
-      // 選択中プロジェクトのスイートとケースを再同期
-      await syncSuites(selectedProject.code);
-      await syncCases(selectedProject.code);
+      // 選択中プロジェクトのスイート、ケース、Shared Stepを再同期
+      await Promise.all([
+        syncSuites(selectedProject.code),
+        syncCases(selectedProject.code),
+        syncSharedSteps(selectedProject.code),
+      ]);
     } else {
       // プロジェクト一覧のみ同期
       await syncProjects();
@@ -49,7 +54,7 @@ export const Header: React.FC<HeaderProps> = ({ onOpenSettings }) => {
   };
 
   // いずれかの同期処理が実行中か
-  const isSyncing = syncingProjects || syncingSuites || syncingCases;
+  const isSyncing = syncingProjects || syncingSuites || syncingCases || syncingSharedSteps;
 
   return (
     <div className="px-6 py-4 flex items-center justify-between">
