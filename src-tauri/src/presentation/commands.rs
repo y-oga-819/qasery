@@ -294,39 +294,3 @@ pub async fn sync_shared_steps(
         .await
         .map_err(|e| e.to_string())
 }
-
-/// デバッグ用: Shared Stepの生データを取得
-///
-/// # Arguments
-/// * `state` - アプリケーション状態
-/// * `project_code` - プロジェクトコード
-///
-/// # Returns
-/// Shared Stepの生データ（JSON文字列）
-#[tauri::command]
-pub async fn debug_shared_steps(
-    state: State<'_, AppState>,
-    project_code: String,
-) -> Result<String, String> {
-    use serde_json;
-
-    // 既存のget_by_projectメソッドを使用
-    let steps = state.db.get_by_project(&project_code).map_err(|e| e.to_string())?;
-
-    // 最初の3件だけを取得してJSON化
-    let sample_steps: Vec<_> = steps.iter().take(3).map(|s| {
-        serde_json::json!({
-            "hash": s.hash,
-            "project_code": s.project_code,
-            "title": s.title,
-            "action": s.action.chars().take(50).collect::<String>()
-        })
-    }).collect();
-
-    let result = serde_json::json!({
-        "count": steps.len(),
-        "samples": sample_steps
-    });
-
-    Ok(result.to_string())
-}
