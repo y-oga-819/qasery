@@ -297,3 +297,66 @@ pub async fn sync_shared_steps(
         .await
         .map_err(|e| e.to_string())
 }
+
+/// デバッグ用: Shared Stepの生データを取得
+///
+/// # Arguments
+/// * `state` - アプリケーション状態
+/// * `hash` - Shared StepハッシュID（オプション）
+///
+/// # Returns
+/// Shared Stepの生データ（JSON文字列）
+#[tauri::command]
+pub async fn debug_shared_step(
+    state: State<'_, AppState>,
+    hash: Option<String>,
+) -> Result<String, String> {
+    use rusqlite::params;
+
+    let conn = state.db.get_connection().map_err(|e| e.to_string())?;
+
+    if let Some(h) = hash {
+        // 特定のShared Stepを取得
+        let mut stmt = conn
+            .prepare("SELECT hash, project_code, title, action FROM shared_steps WHERE hash = ?")
+            .map_err(|e| e.to_string())?;
+
+        let result = stmt
+            .query_row(params![h], |row| {
+                Ok(format!(
+                    "{{\"hash\": \"{}\", \"project_code\": \"{}\", \"title\": \"{}\", \"action\": \"{}\"}}",
+                    row.get::<_, String>(0)?,
+                    row.get::<_, String>(1)?,
+                    row.get::<_, String>(2)?,
+                    row.get::<_, String>(3)?
+                ))
+            })
+            .map_err(|e| e.to_string())?;
+
+        Ok(result)
+    } else {
+        // すべてのShared Stepの数とサンプルを取得
+        let count: i64 = conn
+            .query_row("SELECT COUNT(*) FROM shared_steps", [], |row| row.get(0))
+            .map_err(|e| e.to_string())?;
+
+        let mut stmt = conn
+            .prepare("SELECT hash, project_code, title, action FROM shared_steps LIMIT 3")
+            .map_err(|e| e.to_string())?;
+
+        let samples: Result<Vec<String>, _> = stmt
+            .query_map([], |row| {
+                Ok(format!(
+                    "{{\"hash\": \"{}\", \"project_code\": \"{}\", \"title\": \"{}\", \"action\": \"{}\"}}",
+                    row.get::<_, String>(0)?,
+                    row.get::<_, String>(1)?,
+                    row.get::<_, String>(2)?,
+                    row.get::<_, String>(3)?.chars().take(50).collect::<String>()
+                ))
+            })
+            .and_then(|rows| rows.collect())
+            .map_err(|e| e.to_string());
+
+        Ok(format!("{{\"count\": {}, \"samples\": [{}]}}", count, samples?.join(",")))
+    }
+}

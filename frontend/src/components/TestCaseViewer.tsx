@@ -316,6 +316,16 @@ function TestStepsList({ steps, sharedStepsMap }: TestStepsListProps) {
           const sharedStep = sharedStepHash ? sharedStepsMap.get(sharedStepHash) : null;
           const sharedStepName = sharedStep?.title || group[0].action || 'Shared Step';
 
+          // デバッグログ
+          console.log(`[TestCaseViewer] Shared Step Group ${groupIndex}:`, {
+            hash: sharedStepHash,
+            foundInMap: !!sharedStep,
+            title: sharedStep?.title,
+            action: group[0].action?.substring(0, 50) + '...',
+            displayName: sharedStepName?.substring(0, 50) + '...',
+            mapSize: sharedStepsMap.size
+          });
+
           return (
             <div key={groupIndex} className="border-2 border-purple-300 rounded-lg p-4 bg-purple-50">
               <div className="mb-3">
