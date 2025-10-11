@@ -38,9 +38,25 @@ export function useSharedSteps(projectCode: string | null) {
       setError(null);
 
       try {
-        const steps = await invoke<SharedStep[]>('get_shared_steps', {
+        // 1. まずDBから取得を試みる
+        let steps = await invoke<SharedStep[]>('get_shared_steps', {
           projectCode,
         });
+
+        // 2. 空の場合は同期してから再取得
+        if (steps.length === 0) {
+          console.log(`No shared steps found for project ${projectCode}, syncing...`);
+          try {
+            await invoke('sync_shared_steps', { projectCode });
+            steps = await invoke<SharedStep[]>('get_shared_steps', {
+              projectCode,
+            });
+            console.log(`Synced ${steps.length} shared steps`);
+          } catch (syncErr) {
+            console.warn('Failed to sync shared steps:', syncErr);
+            // 同期失敗しても続行（空のマップを返す）
+          }
+        }
 
         // ハッシュでマップ化
         const map = new Map<string, SharedStep>();
