@@ -8,8 +8,9 @@ mod presentation;
 
 use application::appstate::AppState;
 use presentation::commands::{
-    get_api_token, get_case, get_cases_by_suite, get_project, get_suite, get_suites_tree,
-    list_projects, save_api_token, save_case, sync_cases, sync_projects, sync_suites,
+    get_api_token, get_case, get_case_steps, get_cases_by_suite, get_project, get_suite,
+    get_suites_tree, list_projects, save_api_token, save_case, sync_cases, sync_projects,
+    sync_suites,
 };
 
 fn main() {
@@ -30,6 +31,7 @@ fn main() {
             // テストケース関連コマンド
             get_cases_by_suite,
             get_case,
+            get_case_steps,
             save_case,
             sync_cases,
             // API トークン関連コマンド
