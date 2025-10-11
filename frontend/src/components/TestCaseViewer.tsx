@@ -211,42 +211,7 @@ function TestCaseDetail() {
           ) : steps.length === 0 ? (
             <p className="text-sm text-gray-500 text-center py-4">テストステップがありません</p>
           ) : (
-            <div className="space-y-3">
-              {steps.map((step, index) => (
-                <div key={step.id} className="border border-gray-200 rounded-lg p-4 bg-white">
-                  <div className="flex items-start gap-4">
-                    <div className="flex-shrink-0 w-8 h-8 bg-blue-100 text-blue-800 rounded-full flex items-center justify-center font-semibold text-sm">
-                      {index + 1}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="mb-2">
-                        <h5 className="text-xs font-semibold text-gray-500 uppercase mb-1">アクション</h5>
-                        <p className="text-sm text-gray-900 whitespace-pre-wrap">{step.action}</p>
-                      </div>
-                      {step.expected_result && (
-                        <div className="mb-2">
-                          <h5 className="text-xs font-semibold text-gray-500 uppercase mb-1">期待結果</h5>
-                          <p className="text-sm text-gray-900 whitespace-pre-wrap">{step.expected_result}</p>
-                        </div>
-                      )}
-                      {step.data && (
-                        <div>
-                          <h5 className="text-xs font-semibold text-gray-500 uppercase mb-1">データ</h5>
-                          <p className="text-sm text-gray-600 whitespace-pre-wrap">{step.data}</p>
-                        </div>
-                      )}
-                      {step.shared_step_hash && (
-                        <div className="mt-2">
-                          <span className="inline-block px-2 py-1 text-xs bg-purple-100 text-purple-800 rounded">
-                            Shared Step
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
+            <TestStepsList steps={steps} />
           )}
         </div>
 
@@ -257,6 +222,176 @@ function TestCaseDetail() {
           </p>
         </div>
       </div>
+    </div>
+  );
+}
+
+/**
+ * テストステップ一覧コンポーネント
+ * Shared Stepのグループ化とネストされたステップに対応
+ */
+interface TestStepsListProps {
+  steps: any[];
+}
+
+function TestStepsList({ steps }: TestStepsListProps) {
+  // ステップを親子関係で構造化
+  const buildStepTree = (steps: any[]) => {
+    const stepMap = new Map<number, any>();
+    const rootSteps: any[] = [];
+
+    // まずすべてのステップをMapに登録
+    steps.forEach(step => {
+      stepMap.set(step.id, { ...step, children: [] });
+    });
+
+    // 親子関係を構築
+    steps.forEach(step => {
+      const node = stepMap.get(step.id);
+      if (step.parent_step_id && stepMap.has(step.parent_step_id)) {
+        const parent = stepMap.get(step.parent_step_id);
+        parent.children.push(node);
+      } else {
+        rootSteps.push(node);
+      }
+    });
+
+    return rootSteps;
+  };
+
+  // Shared Stepでグループ化
+  const groupBySharedStep = (steps: any[]) => {
+    const groups: any[][] = [];
+    let currentGroup: any[] = [];
+    let currentHash: string | null = null;
+
+    steps.forEach(step => {
+      if (step.shared_step_hash) {
+        if (currentHash === step.shared_step_hash) {
+          // 同じShared Stepグループに追加
+          currentGroup.push(step);
+        } else {
+          // 前のグループを保存
+          if (currentGroup.length > 0) {
+            groups.push(currentGroup);
+          }
+          // 新しいグループを開始
+          currentHash = step.shared_step_hash;
+          currentGroup = [step];
+        }
+      } else {
+        // Shared Stepではない場合
+        if (currentGroup.length > 0) {
+          groups.push(currentGroup);
+          currentGroup = [];
+          currentHash = null;
+        }
+        // 単独ステップとして追加
+        groups.push([step]);
+      }
+    });
+
+    // 最後のグループを追加
+    if (currentGroup.length > 0) {
+      groups.push(currentGroup);
+    }
+
+    return groups;
+  };
+
+  const treeSteps = buildStepTree(steps);
+  const groupedSteps = groupBySharedStep(treeSteps);
+
+  return (
+    <div className="space-y-3">
+      {groupedSteps.map((group, groupIndex) => {
+        const isSharedStepGroup = group.length > 1 || (group.length === 1 && group[0].shared_step_hash);
+
+        if (isSharedStepGroup) {
+          // Shared Stepグループの表示
+          return (
+            <div key={groupIndex} className="border-2 border-purple-300 rounded-lg p-4 bg-purple-50">
+              <div className="flex items-center gap-2 mb-3">
+                <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-purple-200 text-purple-800">
+                  Shared Step
+                </span>
+                {group[0].shared_step_hash && (
+                  <span className="text-xs text-gray-500">
+                    ({group[0].shared_step_hash.substring(0, 8)}...)
+                  </span>
+                )}
+              </div>
+              <div className="space-y-2">
+                {group.map((step) => (
+                  <StepItem key={step.id} step={step} level={0} />
+                ))}
+              </div>
+            </div>
+          );
+        } else {
+          // 通常ステップの表示
+          return (
+            <div key={groupIndex}>
+              {group.map((step) => (
+                <StepItem key={step.id} step={step} level={0} />
+              ))}
+            </div>
+          );
+        }
+      })}
+    </div>
+  );
+}
+
+/**
+ * 個別ステップアイテムコンポーネント（ネスト対応）
+ */
+interface StepItemProps {
+  step: any;
+  level: number;
+}
+
+function StepItem({ step, level }: StepItemProps) {
+  const indent = level * 24; // 24px per level
+
+  return (
+    <div>
+      <div
+        className="border border-gray-200 rounded-lg p-4 bg-white"
+        style={{ marginLeft: `${indent}px` }}
+      >
+        <div className="flex items-start gap-3">
+          <span className="flex-shrink-0 inline-flex items-center justify-center w-8 h-8 rounded-full bg-blue-100 text-blue-800 text-sm font-medium">
+            {step.position}
+          </span>
+          <div className="flex-1 min-w-0">
+            <h5 className="text-sm font-medium text-gray-900 mb-1">
+              {step.action || 'アクション'}
+            </h5>
+            {step.expected_result && (
+              <p className="text-sm text-gray-600">
+                <span className="font-medium text-gray-700">期待結果: </span>
+                {step.expected_result}
+              </p>
+            )}
+            {step.data && (
+              <p className="text-xs text-gray-500 mt-1">
+                <span className="font-medium">データ: </span>
+                {step.data}
+              </p>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* 子ステップを再帰的に表示 */}
+      {step.children && step.children.length > 0 && (
+        <div className="mt-2">
+          {step.children.map((child: any) => (
+            <StepItem key={child.id} step={child} level={level + 1} />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
