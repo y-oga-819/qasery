@@ -131,6 +131,45 @@ impl Database {
         )
         .context("test_case_stepsテーブルの作成に失敗しました")?;
 
+        // shared_stepsテーブル
+        conn.execute(
+            "CREATE TABLE IF NOT EXISTS shared_steps (
+                hash TEXT PRIMARY KEY,
+                project_code TEXT NOT NULL,
+                title TEXT NOT NULL,
+                action TEXT NOT NULL,
+                expected_result TEXT NOT NULL,
+                cases_count INTEGER NOT NULL DEFAULT 0,
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL,
+                local_updated_at TEXT NOT NULL,
+                remote_updated_at TEXT,
+                sync_status TEXT NOT NULL,
+                is_deleted INTEGER NOT NULL DEFAULT 0,
+                FOREIGN KEY (project_code) REFERENCES projects(code)
+            )",
+            [],
+        )
+        .context("shared_stepsテーブルの作成に失敗しました")?;
+
+        // shared_step_stepsテーブル
+        conn.execute(
+            "CREATE TABLE IF NOT EXISTS shared_step_steps (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                shared_step_hash TEXT NOT NULL,
+                hash TEXT NOT NULL,
+                position INTEGER NOT NULL,
+                action TEXT NOT NULL,
+                expected_result TEXT,
+                data TEXT,
+                parent_step_id INTEGER,
+                FOREIGN KEY (shared_step_hash) REFERENCES shared_steps(hash),
+                FOREIGN KEY (parent_step_id) REFERENCES shared_step_steps(id)
+            )",
+            [],
+        )
+        .context("shared_step_stepsテーブルの作成に失敗しました")?;
+
         // インデックスの作成
         conn.execute(
             "CREATE INDEX IF NOT EXISTS idx_test_suites_project ON test_suites(project_code)",
@@ -142,6 +181,14 @@ impl Database {
         )?;
         conn.execute(
             "CREATE INDEX IF NOT EXISTS idx_test_case_steps_case ON test_case_steps(test_case_id)",
+            [],
+        )?;
+        conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_shared_steps_project ON shared_steps(project_code)",
+            [],
+        )?;
+        conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_shared_step_steps_hash ON shared_step_steps(shared_step_hash)",
             [],
         )?;
 
