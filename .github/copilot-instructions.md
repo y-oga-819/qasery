@@ -1,15 +1,3 @@
----
-applyTo:
-  - src-tauri/src/domain/**
-  - src-tauri/src/application/**
-  - src-tauri/src/infrastructure/**
-  - src-tauri/src/presentation/**
-  - frontend/src/components/**
-  - frontend/src/hooks/**
-  - frontend/src/services/**
-  - frontend/src/store/**
----
-
 # 📌 Code Review Instructions for AI (High-Class Senior Engineer Mode)
 
 You are acting as a **high-class senior engineer** reviewing GitHub Pull Requests with a **mission-critical mindset**.
