@@ -126,6 +126,45 @@ pub struct TestStep {
 /// 単一テストケースの結果（get_case用）
 pub type CaseResult = CaseEntity;
 
+/// Shared Steps APIのレスポンス結果
+#[derive(Debug, Serialize, Deserialize)]
+pub struct SharedStepsResult {
+    pub total: i32,
+    pub filtered: i32,
+    pub count: i32,
+    pub entities: Vec<SharedStepEntity>,
+}
+
+/// Shared Stepエンティティ
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct SharedStepEntity {
+    pub hash: String,
+    pub title: String,
+    pub action: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub expected_result: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub steps: Option<Vec<SharedStepStep>>,
+    pub cases_count: i32,
+    pub created_at: String,
+    pub updated_at: String,
+}
+
+/// Shared Step内のステップ
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct SharedStepStep {
+    pub hash: String,
+    pub position: i32,
+    pub action: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub expected_result: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub data: Option<String>,
+}
+
+/// 単一Shared Stepの結果（get_shared_step用）
+pub type SharedStepResult = SharedStepEntity;
+
 impl QaseClient {
     /// 新しいQaseClientを作成
     ///
@@ -328,6 +367,76 @@ impl QaseClient {
             .await?;
 
         let result: QaseResponse<CaseResult> = response.json().await?;
+        Ok(result)
+    }
+
+    /// プロジェクトのShared Step一覧を取得
+    ///
+    /// # Arguments
+    /// * `code` - プロジェクトコード (2-10文字)
+    /// * `search` - 検索キーワード (オプション)
+    /// * `limit` - 取得件数 (1-100, デフォルト: 10)
+    /// * `offset` - スキップ件数 (0-100000, デフォルト: 0)
+    ///
+    /// # Returns
+    /// Shared Step一覧またはエラー
+    pub async fn get_shared_steps(
+        &self,
+        code: &str,
+        search: Option<&str>,
+        limit: Option<i32>,
+        offset: Option<i32>,
+    ) -> Result<QaseResponse<SharedStepsResult>> {
+        let client = reqwest::Client::new();
+        let url = format!("{}/shared_step/{}", self.base_url, code);
+
+        let mut query_params = vec![];
+        if let Some(s) = search {
+            query_params.push(("search", s.to_string()));
+        }
+        if let Some(l) = limit {
+            query_params.push(("limit", l.to_string()));
+        }
+        if let Some(o) = offset {
+            query_params.push(("offset", o.to_string()));
+        }
+
+        let response = client
+            .get(&url)
+            .header("Token", &self.api_token)
+            .header("accept", "application/json")
+            .query(&query_params)
+            .send()
+            .await?;
+
+        let result: QaseResponse<SharedStepsResult> = response.json().await?;
+        Ok(result)
+    }
+
+    /// 特定のShared Stepを取得
+    ///
+    /// # Arguments
+    /// * `code` - プロジェクトコード (2-10文字)
+    /// * `hash` - Shared StepハッシュID
+    ///
+    /// # Returns
+    /// Shared Step情報またはエラー
+    pub async fn get_shared_step(
+        &self,
+        code: &str,
+        hash: &str,
+    ) -> Result<QaseResponse<SharedStepResult>> {
+        let client = reqwest::Client::new();
+        let url = format!("{}/shared_step/{}/{}", self.base_url, code, hash);
+
+        let response = client
+            .get(&url)
+            .header("Token", &self.api_token)
+            .header("accept", "application/json")
+            .send()
+            .await?;
+
+        let result: QaseResponse<SharedStepResult> = response.json().await?;
         Ok(result)
     }
 }
