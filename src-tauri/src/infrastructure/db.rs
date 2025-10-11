@@ -352,6 +352,7 @@ impl TestSuiteRepository for Database {
                         .and_then(|s| s.parse().ok()),
                     sync_status,
                     is_deleted: row.get(13)?,
+                    children: None,
                 })
             })?
             .collect::<Result<Vec<_>, _>>()?;
@@ -415,6 +416,7 @@ impl TestSuiteRepository for Database {
                     .and_then(|s| s.parse().ok()),
                 sync_status,
                 is_deleted: row.get(13)?,
+                children: None,
             })
         });
 
@@ -887,6 +889,7 @@ mod tests {
             remote_updated_at: None,
             sync_status: SyncStatus::Clean,
             is_deleted: false,
+            children: None,
         };
 
         TestSuiteRepository::save(&db, &suite).unwrap();
@@ -929,6 +932,7 @@ mod tests {
             remote_updated_at: None,
             sync_status: SyncStatus::Clean,
             is_deleted: false,
+            children: None,
         };
 
         let suite2 = TestSuite {
@@ -946,6 +950,7 @@ mod tests {
             remote_updated_at: None,
             sync_status: SyncStatus::Clean,
             is_deleted: false,
+            children: None,
         };
 
         TestSuiteRepository::save(&db, &suite1).unwrap();
@@ -988,6 +993,7 @@ mod tests {
             remote_updated_at: None,
             sync_status: SyncStatus::Clean,
             is_deleted: false,
+            children: None,
         };
         TestSuiteRepository::save(&db, &suite).unwrap();
 
@@ -1053,6 +1059,7 @@ mod tests {
             remote_updated_at: None,
             sync_status: SyncStatus::Clean,
             is_deleted: false,
+            children: None,
         };
         TestSuiteRepository::save(&db, &suite).unwrap();
 
@@ -1156,6 +1163,7 @@ mod tests {
             remote_updated_at: None,
             sync_status: SyncStatus::Clean,
             is_deleted: false,
+            children: None,
         };
 
         let result = TestSuiteRepository::save(&db, &suite);
@@ -1217,6 +1225,7 @@ mod tests {
             remote_updated_at: None,
             sync_status: SyncStatus::Clean,
             is_deleted: false,
+            children: None,
         };
         TestSuiteRepository::save(&db, &suite).unwrap();
 
