@@ -6,7 +6,8 @@
 
 use crate::application::appstate::AppState;
 use crate::application::services::{ProjectService, TestCaseService, TestSuiteService};
-use crate::domain::models::{Project, TestCase, TestSuite};
+use crate::domain::models::{Project, TestCase, TestCaseStep, TestSuite};
+use crate::domain::repository::TestCaseRepository;
 use tauri::State;
 
 /// プロジェクト一覧を取得
@@ -169,6 +170,25 @@ pub async fn save_case(state: State<'_, AppState>, test_case: TestCase) -> Resul
     state
         .test_case_service
         .save_case(&test_case)
+        .map_err(|e| e.to_string())
+}
+
+/// テストケースのステップ一覧を取得
+///
+/// # Arguments
+/// * `state` - アプリケーション状態
+/// * `test_case_id` - テストケースID
+///
+/// # Returns
+/// テストステップ一覧またはエラー
+#[tauri::command]
+pub async fn get_case_steps(
+    state: State<'_, AppState>,
+    test_case_id: i64,
+) -> Result<Vec<TestCaseStep>, String> {
+    state
+        .db
+        .get_steps(test_case_id)
         .map_err(|e| e.to_string())
 }
 

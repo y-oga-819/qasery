@@ -2,7 +2,7 @@
 // Rust側のcommands.rsと対応
 
 import { invoke } from '@tauri-apps/api/core';
-import type { Project, TestSuite, TestCase } from '../types';
+import type { Project, TestSuite, TestCase, TestCaseStep } from '../types';
 
 /**
  * プロジェクト一覧を取得
@@ -98,6 +98,17 @@ export async function getCase(id: number): Promise<TestCase | null> {
  */
 export async function saveCase(testCase: TestCase): Promise<void> {
   return await invoke<void>('save_case', { testCase });
+}
+
+/**
+ * テストケースのステップ一覧を取得
+ *
+ * @param testCaseId テストケースID
+ * @returns テストステップ一覧
+ * @throws エラーメッセージ
+ */
+export async function getCaseSteps(testCaseId: number): Promise<TestCaseStep[]> {
+  return await invoke<TestCaseStep[]>('get_case_steps', { testCaseId });
 }
 
 /**
