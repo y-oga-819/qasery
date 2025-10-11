@@ -144,8 +144,14 @@ pub struct SharedStepEntity {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub expected_result: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    pub data: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub steps: Option<Vec<SharedStepStep>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub cases: Option<Vec<i32>>,
     pub cases_count: i32,
+    pub created: String,
+    pub updated: String,
     pub created_at: String,
     pub updated_at: String,
 }
@@ -409,7 +415,12 @@ impl QaseClient {
             .send()
             .await?;
 
-        let result: QaseResponse<SharedStepsResult> = response.json().await?;
+        // レスポンスボディを取得してログ出力
+        let body = response.text().await?;
+        eprintln!("[get_shared_steps] Response body: {}", body);
+
+        // JSONをパース
+        let result: QaseResponse<SharedStepsResult> = serde_json::from_str(&body)?;
         Ok(result)
     }
 

@@ -286,77 +286,61 @@ pub async fn sync_shared_steps(
     state: State<'_, AppState>,
     project_code: String,
 ) -> Result<usize, String> {
+    eprintln!("[sync_shared_steps] Called with project_code: {}", project_code);
+
     // QaseClientを取得
-    let client = state.get_qase_client().map_err(|e| e.to_string())?;
+    let client = state.get_qase_client().map_err(|e| {
+        eprintln!("[sync_shared_steps] Failed to get Qase client: {}", e);
+        e.to_string()
+    })?;
 
     // 一時的にServiceを作成（QaseClientを使用）
     let service = SharedStepService::new(state.db.clone(), Some(client));
 
-    service
+    let result = service
         .sync_shared_steps(&project_code)
         .await
-        .map_err(|e| e.to_string())
+        .map_err(|e| {
+            eprintln!("[sync_shared_steps] Sync failed: {}", e);
+            e.to_string()
+        })?;
+
+    eprintln!("[sync_shared_steps] Synced {} shared steps", result);
+    Ok(result)
 }
 
 /// デバッグ用: Shared Stepの生データを取得
 ///
 /// # Arguments
 /// * `state` - アプリケーション状態
-/// * `hash` - Shared StepハッシュID（オプション）
+/// * `project_code` - プロジェクトコード
 ///
 /// # Returns
 /// Shared Stepの生データ（JSON文字列）
 #[tauri::command]
-pub async fn debug_shared_step(
+pub async fn debug_shared_steps(
     state: State<'_, AppState>,
-    hash: Option<String>,
+    project_code: String,
 ) -> Result<String, String> {
-    use rusqlite::params;
+    use serde_json;
 
-    let conn = state.db.get_connection().map_err(|e| e.to_string())?;
+    // 既存のget_by_projectメソッドを使用
+    let steps = state.db.get_by_project(&project_code).map_err(|e| e.to_string())?;
 
-    if let Some(h) = hash {
-        // 特定のShared Stepを取得
-        let mut stmt = conn
-            .prepare("SELECT hash, project_code, title, action FROM shared_steps WHERE hash = ?")
-            .map_err(|e| e.to_string())?;
+    // 最初の3件だけを取得してJSON化
+    let sample_steps: Vec<_> = steps.iter().take(3).map(|s| {
+        serde_json::json!({
+            "hash": s.hash,
+            "project_code": s.project_code,
+            "title": s.title,
+            "action": s.action.chars().take(50).collect::<String>()
+        })
+    }).collect();
 
-        let result = stmt
-            .query_row(params![h], |row| {
-                Ok(format!(
-                    "{{\"hash\": \"{}\", \"project_code\": \"{}\", \"title\": \"{}\", \"action\": \"{}\"}}",
-                    row.get::<_, String>(0)?,
-                    row.get::<_, String>(1)?,
-                    row.get::<_, String>(2)?,
-                    row.get::<_, String>(3)?
-                ))
-            })
-            .map_err(|e| e.to_string())?;
+    let result = serde_json::json!({
+        "count": steps.len(),
+        "samples": sample_steps
+    });
 
-        Ok(result)
-    } else {
-        // すべてのShared Stepの数とサンプルを取得
-        let count: i64 = conn
-            .query_row("SELECT COUNT(*) FROM shared_steps", [], |row| row.get(0))
-            .map_err(|e| e.to_string())?;
-
-        let mut stmt = conn
-            .prepare("SELECT hash, project_code, title, action FROM shared_steps LIMIT 3")
-            .map_err(|e| e.to_string())?;
-
-        let samples: Result<Vec<String>, _> = stmt
-            .query_map([], |row| {
-                Ok(format!(
-                    "{{\"hash\": \"{}\", \"project_code\": \"{}\", \"title\": \"{}\", \"action\": \"{}\"}}",
-                    row.get::<_, String>(0)?,
-                    row.get::<_, String>(1)?,
-                    row.get::<_, String>(2)?,
-                    row.get::<_, String>(3)?.chars().take(50).collect::<String>()
-                ))
-            })
-            .and_then(|rows| rows.collect())
-            .map_err(|e| e.to_string());
-
-        Ok(format!("{{\"count\": {}, \"samples\": [{}]}}", count, samples?.join(",")))
-    }
+    Ok(result.to_string())
 }
