@@ -309,17 +309,23 @@ function TestStepsList({ steps }: TestStepsListProps) {
 
         if (isSharedStepGroup) {
           // Shared Stepグループの表示
+          const sharedStepName = group[0].action || 'Shared Step';
           return (
             <div key={groupIndex} className="border-2 border-purple-300 rounded-lg p-4 bg-purple-50">
-              <div className="flex items-center gap-2 mb-3">
-                <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-purple-200 text-purple-800">
-                  Shared Step
-                </span>
-                {group[0].shared_step_hash && (
-                  <span className="text-xs text-gray-500">
-                    ({group[0].shared_step_hash.substring(0, 8)}...)
+              <div className="mb-3">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-purple-200 text-purple-800">
+                    Shared Step
                   </span>
-                )}
+                  {group[0].shared_step_hash && (
+                    <span className="text-xs text-gray-500">
+                      ({group[0].shared_step_hash.substring(0, 8)}...)
+                    </span>
+                  )}
+                </div>
+                <h4 className="text-sm font-semibold text-purple-900 mt-2">
+                  {sharedStepName}
+                </h4>
               </div>
               <div className="space-y-2">
                 {group.map((step) => (
