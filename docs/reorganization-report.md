@@ -27,8 +27,8 @@ docs/
 │
 └── reviews/                            # 🔍 コードレビュー報告書
     ├── README.md                       #    レビュー資料の読み方ガイド
-    ├── EXECUTIVE_SUMMARY.md            #    エグゼクティブサマリー（必読）
-    └── code-review-report.md           #    詳細レビュー報告書
+    ├── review-summary.md            #    エグゼクティブサマリー（必読）
+    └── review-report.md           #    詳細レビュー報告書
 ```
 
 ---
@@ -38,8 +38,8 @@ docs/
 ### 変更前（フラット構造）
 ```
 docs/
-├── code-review-report.md
-├── EXECUTIVE_SUMMARY.md
+├── review-report.md
+├── review-summary.md
 ├── phase1-development.md
 ├── phase2-action-plan.md
 ├── phase2-checklist.md

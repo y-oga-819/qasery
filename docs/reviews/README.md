@@ -8,7 +8,7 @@
 ## 📂 資料一覧
 
 ### 🎯 1. エグゼクティブサマリー（最初に読むべき）
-**ファイル**: [`EXECUTIVE_SUMMARY.md`](./EXECUTIVE_SUMMARY.md)  
+**ファイル**: [`review-summary.md`](./review-summary.md)  
 **対象読者**: 全員（PM、開発者、経営層）  
 **所要時間**: 5分
 
@@ -67,7 +67,7 @@ Phase 2着手前の必須タスクを管理するチェックリスト。毎日�
 ---
 
 ### 📊 4. 詳細レビュー報告書（深掘りしたい時）
-**ファイル**: [`code-review-report.md`](./code-review-report.md)  
+**ファイル**: [`review-report.md`](./review-report.md)  
 **対象読者**: 技術リーダー、シニアエンジニア  
 **所要時間**: 60分
 
@@ -97,22 +97,22 @@ Phase 2着手前の必須タスクを管理するチェックリスト。毎日�
 ## 🚀 読む順番（推奨）
 
 ### パターンA: とりあえず概要を把握したい
-1. [`EXECUTIVE_SUMMARY.md`](./EXECUTIVE_SUMMARY.md) - 5分
+1. [`review-summary.md`](./review-summary.md) - 5分
 
 ### パターンB: 開発者として実装したい
-1. [`EXECUTIVE_SUMMARY.md`](./EXECUTIVE_SUMMARY.md) - 5分
+1. [`review-summary.md`](./review-summary.md) - 5分
 2. [`phase2-checklist.md`](./phase2-checklist.md) - 5分
 3. [`phase2-action-plan.md`](./phase2-action-plan.md) の担当タスク部分 - 30分
 
 ### パターンC: 技術リーダーとして全体を把握したい
-1. [`EXECUTIVE_SUMMARY.md`](./EXECUTIVE_SUMMARY.md) - 5分
-2. [`code-review-report.md`](./code-review-report.md) - 60分
+1. [`review-summary.md`](./review-summary.md) - 5分
+2. [`review-report.md`](./review-report.md) - 60分
 3. [`phase2-action-plan.md`](./phase2-action-plan.md) - 30分
 4. [`phase2-checklist.md`](./phase2-checklist.md) - 5分
 
 ### パターンD: PMとして意思決定したい
-1. [`EXECUTIVE_SUMMARY.md`](./EXECUTIVE_SUMMARY.md) - 5分
-2. [`code-review-report.md`](./code-review-report.md) の「ビジネスインパクト」セクション - 10分
+1. [`review-summary.md`](./review-summary.md) - 5分
+2. [`review-report.md`](./review-report.md) の「ビジネスインパクト」セクション - 10分
 3. [`phase2-checklist.md`](./phase2-checklist.md) のマイルストーン部分 - 5分
 
 ---
@@ -141,7 +141,7 @@ Phase 2着手前の必須タスクを管理するチェックリスト。毎日�
 
 ### 今日やること
 1. [ ] このREADMEをチーム全員に共有
-2. [ ] [`EXECUTIVE_SUMMARY.md`](./EXECUTIVE_SUMMARY.md) を全員で読み合わせ
+2. [ ] [`review-summary.md`](./review-summary.md) を全員で読み合わせ
 3. [ ] Phase 2機能開発の一時停止を決定
 
 ### 今週やること

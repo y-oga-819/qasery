@@ -8,7 +8,7 @@
 
 ## 📋 このディレクトリの資料
 
-### 1. アクションプラン [`action-plan.md`](./action-plan.md)
+### 1. アクションプラン [`phase2-action-plan.md`](./phase2-action-plan.md)
 **対象読者**: 開発者  
 **所要時間**: 読むのは30分、実施は3週間
 
@@ -28,7 +28,7 @@
 
 ---
 
-### 2. チェックリスト [`checklist.md`](./checklist.md)
+### 2. チェックリスト [`phase2-checklist.md`](./phase2-checklist.md)
 **対象読者**: 開発チーム全員、PM  
 **所要時間**: 毎日5分
 
@@ -113,20 +113,20 @@ Phase 2着手前の必須タスクを管理する日常チェックリスト。
 
 1. ✅ チーム全体で[`../reviews/EXECUTIVE_SUMMARY.md`](../reviews/EXECUTIVE_SUMMARY.md)を読み合わせ
 2. ✅ Phase 2機能開発の一時停止を正式決定
-3. ✅ [`action-plan.md`](./action-plan.md)のタスク1-7をGitHub Issuesに登録
+3. ✅ [`phase2-action-plan.md`](./phase2-action-plan.md)のタスク1-7をGitHub Issuesに登録
 4. ✅ 各タスクに担当者をアサイン
 5. ✅ 週次レビューミーティングを設定（毎週金曜17:00）
 
 ### 今週やること（Week 1）
 
 1. ✅ タスク1（Value Object導入）に着手
-2. ✅ 毎朝9:00にスタンドアップ、[`checklist.md`](./checklist.md)で進捗確認
+2. ✅ 毎朝9:00にスタンドアップ、[`phase2-checklist.md`](./phase2-checklist.md)で進捗確認
 3. ✅ 金曜17:00に週次レビュー、M1達成状況を確認
 
 ### 3週間後のゴール
 
 - ✅ すべてのCriticalタスクが完了
-- ✅ [`checklist.md`](./checklist.md)のすべての項目にチェック
+- ✅ [`phase2-checklist.md`](./phase2-checklist.md)のすべての項目にチェック
 - ✅ Phase 2機能開発の着手許可を取得
 
 ---
@@ -224,7 +224,7 @@ cargo test -- --test-threads=1
 - **技術的な実装**: 開発チームリード
 - **スケジュール調整**: PM
 - **アーキテクチャ判断**: 技術リーダー
-- **ドキュメント不明点**: [`action-plan.md`](./action-plan.md)の該当セクションを再読
+- **ドキュメント不明点**: [`phase2-action-plan.md`](./phase2-action-plan.md)の該当セクションを再読
 
 ---
 
