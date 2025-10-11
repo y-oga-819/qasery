@@ -665,7 +665,7 @@ impl SharedStepService {
                 id: 0, // Auto-increment
                 shared_step_hash: shared_step_hash.to_string(),
                 hash: step.hash.clone(),
-                position: (index + 1) as i32,  // APIにpositionがないので、配列インデックスから生成
+                position: (index + 1) as i32, // APIにpositionがないので、配列インデックスから生成
                 action: step.action.clone(),
                 expected_result: step.expected_result.clone(),
                 data: step.data.clone(),

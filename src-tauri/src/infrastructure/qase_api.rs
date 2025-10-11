@@ -151,11 +151,11 @@ pub struct SharedStepEntity {
     pub cases: Option<Vec<i32>>,
     pub cases_count: i32,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub created: Option<String>,  // 日時文字列（例: "2025-09-19 14:27:42"）
+    pub created: Option<String>, // 日時文字列（例: "2025-09-19 14:27:42"）
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub updated: Option<String>,  // 日時文字列（例: "2025-09-25 16:35:46"）
-    pub created_at: String,        // ISO 8601形式（例: "2025-09-19T14:27:42+09:00"）
-    pub updated_at: String,        // ISO 8601形式（例: "2025-09-25T16:35:46+09:00"）
+    pub updated: Option<String>, // 日時文字列（例: "2025-09-25 16:35:46"）
+    pub created_at: String, // ISO 8601形式（例: "2025-09-19T14:27:42+09:00"）
+    pub updated_at: String, // ISO 8601形式（例: "2025-09-25T16:35:46+09:00"）
 }
 
 /// Shared Step内のステップ
@@ -168,9 +168,9 @@ pub struct SharedStepStep {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub data: Option<String>,
     #[serde(default)]
-    pub steps: Vec<SharedStepStep>,  // ネストされたステップ（再帰的）
+    pub steps: Vec<SharedStepStep>, // ネストされたステップ（再帰的）
     #[serde(default)]
-    pub attachments: Vec<serde_json::Value>,  // 添付ファイル（Phase 1では使用しない）
+    pub attachments: Vec<serde_json::Value>, // 添付ファイル（Phase 1では使用しない）
 }
 
 /// 単一Shared Stepの結果（get_shared_step用）
