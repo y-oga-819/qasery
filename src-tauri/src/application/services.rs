@@ -660,11 +660,12 @@ impl SharedStepService {
     ) -> Vec<SharedStepStep> {
         steps
             .iter()
-            .map(|step| SharedStepStep {
+            .enumerate()
+            .map(|(index, step)| SharedStepStep {
                 id: 0, // Auto-increment
                 shared_step_hash: shared_step_hash.to_string(),
                 hash: step.hash.clone(),
-                position: step.position,
+                position: (index + 1) as i32,  // APIにpositionがないので、配列インデックスから生成
                 action: step.action.clone(),
                 expected_result: step.expected_result.clone(),
                 data: step.data.clone(),

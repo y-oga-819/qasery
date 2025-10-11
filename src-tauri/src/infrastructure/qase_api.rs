@@ -150,22 +150,27 @@ pub struct SharedStepEntity {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub cases: Option<Vec<i32>>,
     pub cases_count: i32,
-    pub created: String,
-    pub updated: String,
-    pub created_at: String,
-    pub updated_at: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub created: Option<String>,  // 日時文字列（例: "2025-09-19 14:27:42"）
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub updated: Option<String>,  // 日時文字列（例: "2025-09-25 16:35:46"）
+    pub created_at: String,        // ISO 8601形式（例: "2025-09-19T14:27:42+09:00"）
+    pub updated_at: String,        // ISO 8601形式（例: "2025-09-25T16:35:46+09:00"）
 }
 
 /// Shared Step内のステップ
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct SharedStepStep {
     pub hash: String,
-    pub position: i32,
     pub action: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub expected_result: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub data: Option<String>,
+    #[serde(default)]
+    pub steps: Vec<SharedStepStep>,  // ネストされたステップ（再帰的）
+    #[serde(default)]
+    pub attachments: Vec<serde_json::Value>,  // 添付ファイル（Phase 1では使用しない）
 }
 
 /// 単一Shared Stepの結果（get_shared_step用）
@@ -417,10 +422,16 @@ impl QaseClient {
 
         // レスポンスボディを取得してログ出力
         let body = response.text().await?;
-        eprintln!("[get_shared_steps] Response body: {}", body);
+        eprintln!("[get_shared_steps] Response body (first 1000 chars): {}", 
+            if body.len() > 1000 { &body[..1000] } else { &body });
 
         // JSONをパース
-        let result: QaseResponse<SharedStepsResult> = serde_json::from_str(&body)?;
+        let result: QaseResponse<SharedStepsResult> = serde_json::from_str(&body)
+            .map_err(|e| {
+                eprintln!("[get_shared_steps] JSON parse error: {}", e);
+                eprintln!("[get_shared_steps] Full response body: {}", body);
+                e
+            })?;
         Ok(result)
     }
 
