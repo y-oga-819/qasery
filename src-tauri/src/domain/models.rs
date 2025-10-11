@@ -127,6 +127,56 @@ pub struct TestCaseStep {
     pub parent_step_id: Option<i64>,
 }
 
+/// Shared Step
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SharedStep {
+    /// Shared StepハッシュID
+    pub hash: String,
+    /// プロジェクトコード
+    pub project_code: String,
+    /// Shared Step名
+    pub title: String,
+    /// アクション（実行内容）
+    pub action: String,
+    /// 期待される結果
+    pub expected_result: String,
+    /// このShared Stepを使用しているテストケース数
+    pub cases_count: i32,
+    /// 作成日時（Qase API）
+    pub created_at: DateTime<Utc>,
+    /// 更新日時（Qase API）
+    pub updated_at: DateTime<Utc>,
+    /// ローカル更新日時
+    pub local_updated_at: DateTime<Utc>,
+    /// リモート更新日時（前回同期時）
+    pub remote_updated_at: Option<DateTime<Utc>>,
+    /// 同期状態
+    pub sync_status: SyncStatus,
+    /// 削除フラグ
+    pub is_deleted: bool,
+}
+
+/// Shared Step内のステップ
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SharedStepStep {
+    /// ステップID（ローカルDB用）
+    pub id: i64,
+    /// 所属するShared StepハッシュID
+    pub shared_step_hash: String,
+    /// ステップハッシュ（Qase API）
+    pub hash: String,
+    /// 表示順序
+    pub position: i32,
+    /// アクション（実行内容）
+    pub action: String,
+    /// 期待される結果
+    pub expected_result: Option<String>,
+    /// データ（入力データなど）
+    pub data: Option<String>,
+    /// 親ステップID（ネストされたステップ用）
+    pub parent_step_id: Option<i64>,
+}
+
 /// ローカルとリモートの変更を追跡するための同期状態
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
