@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import { useStore } from '../store';
 import { useTestCases } from '../hooks/useTestCases';
 import { useTestSteps } from '../hooks/useTestSteps';
+import { useSharedSteps } from '../hooks/useSharedSteps';
 import { Button, Spinner, ErrorMessage } from './common';
 
 /**
@@ -117,6 +118,7 @@ function TestCaseList({ cases, onSelect }: TestCaseListProps) {
 function TestCaseDetail() {
   const { selectedCase, selectCase } = useStore();
   const { steps, loading: stepsLoading, error: stepsError } = useTestSteps(selectedCase?.id || null);
+  const { sharedStepsMap } = useSharedSteps(selectedCase?.project_code || null);
 
   if (!selectedCase) {
     return null;
@@ -211,7 +213,7 @@ function TestCaseDetail() {
           ) : steps.length === 0 ? (
             <p className="text-sm text-gray-500 text-center py-4">テストステップがありません</p>
           ) : (
-            <TestStepsList steps={steps} />
+            <TestStepsList steps={steps} sharedStepsMap={sharedStepsMap} />
           )}
         </div>
 
@@ -232,9 +234,10 @@ function TestCaseDetail() {
  */
 interface TestStepsListProps {
   steps: any[];
+  sharedStepsMap: Map<string, any>;
 }
 
-function TestStepsList({ steps }: TestStepsListProps) {
+function TestStepsList({ steps, sharedStepsMap }: TestStepsListProps) {
   // ステップを親子関係で構造化
   const buildStepTree = (steps: any[]) => {
     const stepMap = new Map<number, any>();
@@ -309,7 +312,10 @@ function TestStepsList({ steps }: TestStepsListProps) {
 
         if (isSharedStepGroup) {
           // Shared Stepグループの表示
-          const sharedStepName = group[0].action || 'Shared Step';
+          const sharedStepHash = group[0].shared_step_hash;
+          const sharedStep = sharedStepHash ? sharedStepsMap.get(sharedStepHash) : null;
+          const sharedStepName = sharedStep?.title || group[0].action || 'Shared Step';
+
           return (
             <div key={groupIndex} className="border-2 border-purple-300 rounded-lg p-4 bg-purple-50">
               <div className="mb-3">
@@ -317,9 +323,9 @@ function TestStepsList({ steps }: TestStepsListProps) {
                   <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-purple-200 text-purple-800">
                     Shared Step
                   </span>
-                  {group[0].shared_step_hash && (
+                  {sharedStepHash && (
                     <span className="text-xs text-gray-500">
-                      ({group[0].shared_step_hash.substring(0, 8)}...)
+                      ({sharedStepHash.substring(0, 8)}...)
                     </span>
                   )}
                 </div>
