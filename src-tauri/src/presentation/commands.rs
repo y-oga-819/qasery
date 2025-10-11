@@ -286,27 +286,13 @@ pub async fn sync_shared_steps(
     state: State<'_, AppState>,
     project_code: String,
 ) -> Result<usize, String> {
-    eprintln!("[sync_shared_steps] Called with project_code: {}", project_code);
-
-    // QaseClientを取得
-    let client = state.get_qase_client().map_err(|e| {
-        eprintln!("[sync_shared_steps] Failed to get Qase client: {}", e);
-        e.to_string()
-    })?;
-
-    // 一時的にServiceを作成（QaseClientを使用）
+    let client = state.get_qase_client().map_err(|e| e.to_string())?;
     let service = SharedStepService::new(state.db.clone(), Some(client));
 
-    let result = service
+    service
         .sync_shared_steps(&project_code)
         .await
-        .map_err(|e| {
-            eprintln!("[sync_shared_steps] Sync failed: {}", e);
-            e.to_string()
-        })?;
-
-    eprintln!("[sync_shared_steps] Synced {} shared steps", result);
-    Ok(result)
+        .map_err(|e| e.to_string())
 }
 
 /// デバッグ用: Shared Stepの生データを取得

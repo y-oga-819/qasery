@@ -420,18 +420,7 @@ impl QaseClient {
             .send()
             .await?;
 
-        // レスポンスボディを取得してログ出力
-        let body = response.text().await?;
-        eprintln!("[get_shared_steps] Response body (first 1000 chars): {}", 
-            if body.len() > 1000 { &body[..1000] } else { &body });
-
-        // JSONをパース
-        let result: QaseResponse<SharedStepsResult> = serde_json::from_str(&body)
-            .map_err(|e| {
-                eprintln!("[get_shared_steps] JSON parse error: {}", e);
-                eprintln!("[get_shared_steps] Full response body: {}", body);
-                e
-            })?;
+        let result: QaseResponse<SharedStepsResult> = response.json().await?;
         Ok(result)
     }
 

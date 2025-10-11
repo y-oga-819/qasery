@@ -39,35 +39,21 @@ export function useSharedSteps(projectCode: string | null) {
 
       try {
         // 1. まずDBから取得を試みる
-        console.log(`[useSharedSteps] Fetching shared steps for project: ${projectCode}`);
         let steps = await invoke<SharedStep[]>('get_shared_steps', {
           projectCode,
         });
-        console.log(`[useSharedSteps] Found ${steps.length} shared steps in DB`);
 
         // 2. 空の場合は同期してから再取得
         if (steps.length === 0) {
-          console.log(`[useSharedSteps] No shared steps found for project ${projectCode}, syncing...`);
           try {
-            const count = await invoke<number>('sync_shared_steps', { projectCode });
-            console.log(`[useSharedSteps] Synced ${count} shared steps`);
+            await invoke<number>('sync_shared_steps', { projectCode });
             steps = await invoke<SharedStep[]>('get_shared_steps', {
               projectCode,
             });
-            console.log(`[useSharedSteps] After sync, found ${steps.length} shared steps`);
           } catch (syncErr) {
             console.warn('[useSharedSteps] Failed to sync shared steps:', syncErr);
             // 同期失敗しても続行（空のマップを返す）
           }
-        }
-
-        // デバッグ: 最初の3つのShared Stepを出力
-        if (steps.length > 0) {
-          console.log(`[useSharedSteps] Sample shared steps (first 3):`, steps.slice(0, 3).map(s => ({
-            hash: s.hash,
-            title: s.title,
-            action: s.action.substring(0, 50) + '...'
-          })));
         }
 
         // ハッシュでマップ化
@@ -75,7 +61,6 @@ export function useSharedSteps(projectCode: string | null) {
         steps.forEach((step) => {
           map.set(step.hash, step);
         });
-        console.log(`[useSharedSteps] Created map with ${map.size} entries`);
 
         setSharedStepsMap(map);
       } catch (err) {
