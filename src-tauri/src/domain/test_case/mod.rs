@@ -64,7 +64,12 @@ pub struct TestCase {
 impl TestCase {
     /// 新しいテストケースを作成
     #[allow(clippy::too_many_arguments)]
-    pub fn new(id: TestCaseId, title: String, suite_id: TestSuiteId, project_code: ProjectCode) -> Self {
+    pub fn new(
+        id: TestCaseId,
+        title: String,
+        suite_id: TestSuiteId,
+        project_code: ProjectCode,
+    ) -> Self {
         let now = Utc::now();
         Self {
             id,
