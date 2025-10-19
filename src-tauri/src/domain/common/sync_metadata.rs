@@ -26,6 +26,57 @@ pub struct SyncMetadata {
     is_deleted: bool,
 }
 
+impl SyncMetadata {
+    /// 新しい同期メタデータを作成
+    pub fn new() -> Self {
+        Self {
+            local_updated_at: Utc::now(),
+            remote_updated_at: None,
+            sync_status: SyncStatus::Clean,
+            is_deleted: false,
+        }
+    }
+
+    /// 同期状態を取得
+    pub fn sync_status(&self) -> SyncStatus {
+        self.sync_status
+    }
+
+    /// 削除フラグを取得
+    pub fn is_deleted(&self) -> bool {
+        self.is_deleted
+    }
+
+    /// リモート更新日時を取得
+    pub fn remote_updated_at(&self) -> Option<DateTime<Utc>> {
+        self.remote_updated_at
+    }
+
+    /// ローカル変更としてマーク
+    pub fn mark_local_modified(&mut self) {
+        self.local_updated_at = Utc::now();
+        self.sync_status = SyncStatus::LocalModified;
+    }
+
+    /// 同期完了としてマーク
+    pub fn mark_synced(&mut self, remote_time: DateTime<Utc>) {
+        self.remote_updated_at = Some(remote_time);
+        self.sync_status = SyncStatus::Clean;
+    }
+
+    /// コンフリクトを検出
+    pub fn detect_conflict(&mut self, remote_time: DateTime<Utc>) {
+        self.remote_updated_at = Some(remote_time);
+        self.sync_status = SyncStatus::Conflict;
+    }
+
+    /// 削除マークを付ける
+    pub fn mark_deleted(&mut self) {
+        self.is_deleted = true;
+        self.mark_local_modified();
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
