@@ -31,3 +31,6 @@ build/
 *.db
 *.sqlite
 *.sqlite3
+
+# Serena MCP
+.serena/
