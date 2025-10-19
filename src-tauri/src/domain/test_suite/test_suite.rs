@@ -34,6 +34,52 @@ pub struct TestSuite {
     children: Option<Vec<TestSuite>>,
 }
 
+impl TestSuite {
+    /// 新しいテストスイートを作成
+    pub fn new(id: TestSuiteId, title: String, project_code: String) -> Self {
+        let now = Utc::now();
+        Self {
+            id,
+            project_code,
+            title,
+            description: None,
+            preconditions: None,
+            parent_id: None,
+            position: 0,
+            cases_count: 0,
+            created_at: now,
+            updated_at: now,
+            sync_metadata: SyncMetadata::new(),
+            children: None,
+        }
+    }
+
+    /// テストスイートIDを取得
+    pub fn id(&self) -> TestSuiteId {
+        self.id
+    }
+
+    /// タイトルを取得
+    pub fn title(&self) -> &str {
+        &self.title
+    }
+
+    /// プロジェクトコードを取得
+    pub fn project_code(&self) -> &str {
+        &self.project_code
+    }
+
+    /// 表示順序を取得
+    pub fn position(&self) -> i32 {
+        self.position
+    }
+
+    /// 親IDを取得
+    pub fn parent_id(&self) -> Option<TestSuiteId> {
+        self.parent_id
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
