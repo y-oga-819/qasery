@@ -2,3 +2,4 @@
 pub mod common;
 pub mod models;
 pub mod repository;
+pub mod test_suite;
