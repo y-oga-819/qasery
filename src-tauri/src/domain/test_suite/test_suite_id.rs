@@ -6,6 +6,18 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct TestSuiteId(i64);
 
+impl TestSuiteId {
+    /// 新しいTestSuiteIdを作成
+    pub fn new(value: i64) -> Self {
+        Self(value)
+    }
+
+    /// 値を取得
+    pub fn value(&self) -> i64 {
+        self.0
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
