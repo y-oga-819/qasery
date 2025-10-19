@@ -10,6 +10,7 @@ mod test_case_id;
 mod test_step;
 
 use crate::domain::common::sync_metadata::SyncMetadata;
+use crate::domain::project::ProjectCode;
 use crate::domain::test_suite::TestSuiteId;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
@@ -32,7 +33,7 @@ pub use test_step::TestStep;
 pub struct TestCase {
     // 識別子
     id: TestCaseId,
-    project_code: String,
+    project_code: ProjectCode,
     suite_id: TestSuiteId,
 
     // 基本情報
@@ -63,7 +64,7 @@ pub struct TestCase {
 impl TestCase {
     /// 新しいテストケースを作成
     #[allow(clippy::too_many_arguments)]
-    pub fn new(id: TestCaseId, title: String, suite_id: TestSuiteId, project_code: String) -> Self {
+    pub fn new(id: TestCaseId, title: String, suite_id: TestSuiteId, project_code: ProjectCode) -> Self {
         let now = Utc::now();
         Self {
             id,
@@ -102,7 +103,7 @@ impl TestCase {
     }
 
     /// プロジェクトコードを取得
-    pub fn project_code(&self) -> &str {
+    pub fn project_code(&self) -> &ProjectCode {
         &self.project_code
     }
 
@@ -155,27 +156,29 @@ mod tests {
 
     #[test]
     fn test_test_case_new() {
+        let project_code = ProjectCode::new("PROJ".to_string()).unwrap();
         let test_case = TestCase::new(
             TestCaseId::new(1),
             "Test Login".to_string(),
             TestSuiteId::new(10),
-            "PROJ".to_string(),
+            project_code.clone(),
         );
 
         assert_eq!(test_case.id().value(), 1);
         assert_eq!(test_case.title(), "Test Login");
         assert_eq!(test_case.suite_id().value(), 10);
-        assert_eq!(test_case.project_code(), "PROJ");
+        assert_eq!(test_case.project_code().value(), "PROJ");
         assert_eq!(test_case.steps().len(), 0);
     }
 
     #[test]
     fn test_test_case_add_step() {
+        let project_code = ProjectCode::new("PROJ".to_string()).unwrap();
         let mut test_case = TestCase::new(
             TestCaseId::new(1),
             "Test".to_string(),
             TestSuiteId::new(10),
-            "PROJ".to_string(),
+            project_code.clone(),
         );
 
         let step = OrderedStep::new_own(StepId::new(1), 0);
@@ -190,11 +193,12 @@ mod tests {
 
     #[test]
     fn test_test_case_remove_step() {
+        let project_code = ProjectCode::new("PROJ".to_string()).unwrap();
         let mut test_case = TestCase::new(
             TestCaseId::new(1),
             "Test".to_string(),
             TestSuiteId::new(10),
-            "PROJ".to_string(),
+            project_code.clone(),
         );
 
         let step = OrderedStep::new_own(StepId::new(1), 0);
@@ -207,11 +211,12 @@ mod tests {
 
     #[test]
     fn test_test_case_move_to_suite() {
+        let project_code = ProjectCode::new("PROJ".to_string()).unwrap();
         let mut test_case = TestCase::new(
             TestCaseId::new(1),
             "Test".to_string(),
             TestSuiteId::new(10),
-            "PROJ".to_string(),
+            project_code.clone(),
         );
 
         test_case.move_to_suite(TestSuiteId::new(20));

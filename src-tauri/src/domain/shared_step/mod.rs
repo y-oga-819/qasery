@@ -6,6 +6,7 @@ pub mod repository;
 mod shared_step_id;
 
 use crate::domain::common::sync_metadata::SyncMetadata;
+use crate::domain::project::ProjectCode;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
@@ -89,7 +90,7 @@ impl SharedStepStep {
 pub struct SharedStep {
     // 識別子
     id: SharedStepId,
-    project_code: String,
+    project_code: ProjectCode,
 
     // 基本情報
     title: String,
@@ -110,7 +111,7 @@ pub struct SharedStep {
 
 impl SharedStep {
     /// 新しい共有ステップを作成
-    pub fn new(id: SharedStepId, title: String, project_code: String) -> Self {
+    pub fn new(id: SharedStepId, title: String, project_code: ProjectCode) -> Self {
         let now = Utc::now();
         Self {
             id,
@@ -135,7 +136,7 @@ impl SharedStep {
     }
 
     /// プロジェクトコードを取得
-    pub fn project_code(&self) -> &str {
+    pub fn project_code(&self) -> &ProjectCode {
         &self.project_code
     }
 
@@ -203,25 +204,27 @@ mod tests {
 
     #[test]
     fn test_shared_step_new() {
+        let project_code = ProjectCode::new("PROJ".to_string()).unwrap();
         let shared_step = SharedStep::new(
             SharedStepId::new("hash123".to_string()),
             "Login Flow".to_string(),
-            "PROJ".to_string(),
+            project_code.clone(),
         );
 
         assert_eq!(shared_step.id().value(), "hash123");
         assert_eq!(shared_step.title(), "Login Flow");
-        assert_eq!(shared_step.project_code(), "PROJ");
+        assert_eq!(shared_step.project_code().value(), "PROJ");
         assert_eq!(shared_step.steps().len(), 0);
         assert_eq!(shared_step.cases_count(), 0);
     }
 
     #[test]
     fn test_shared_step_add_step() {
+        let project_code = ProjectCode::new("PROJ".to_string()).unwrap();
         let mut shared_step = SharedStep::new(
             SharedStepId::new("hash123".to_string()),
             "Login".to_string(),
-            "PROJ".to_string(),
+            project_code.clone(),
         );
 
         let step = SharedStepStep::new(
@@ -243,10 +246,11 @@ mod tests {
 
     #[test]
     fn test_shared_step_add_duplicate_position() {
+        let project_code = ProjectCode::new("PROJ".to_string()).unwrap();
         let mut shared_step = SharedStep::new(
             SharedStepId::new("hash123".to_string()),
             "Login".to_string(),
-            "PROJ".to_string(),
+            project_code.clone(),
         );
 
         let step1 = SharedStepStep::new(1, "hash1".to_string(), "Step 1".to_string(), None, 0);
@@ -261,10 +265,11 @@ mod tests {
 
     #[test]
     fn test_shared_step_remove_step() {
+        let project_code = ProjectCode::new("PROJ".to_string()).unwrap();
         let mut shared_step = SharedStep::new(
             SharedStepId::new("hash123".to_string()),
             "Login".to_string(),
-            "PROJ".to_string(),
+            project_code.clone(),
         );
 
         let step = SharedStepStep::new(1, "hash1".to_string(), "Step 1".to_string(), None, 0);
@@ -277,10 +282,11 @@ mod tests {
 
     #[test]
     fn test_shared_step_can_delete_when_in_use() {
+        let project_code = ProjectCode::new("PROJ".to_string()).unwrap();
         let mut shared_step = SharedStep::new(
             SharedStepId::new("hash123".to_string()),
             "Login".to_string(),
-            "PROJ".to_string(),
+            project_code.clone(),
         );
         shared_step.cases_count = 5;
 
@@ -290,10 +296,11 @@ mod tests {
 
     #[test]
     fn test_shared_step_can_delete_when_not_in_use() {
+        let project_code = ProjectCode::new("PROJ".to_string()).unwrap();
         let shared_step = SharedStep::new(
             SharedStepId::new("hash123".to_string()),
             "Login".to_string(),
-            "PROJ".to_string(),
+            project_code.clone(),
         );
 
         let result = shared_step.can_delete();
@@ -302,10 +309,11 @@ mod tests {
 
     #[test]
     fn test_shared_step_update_title() {
+        let project_code = ProjectCode::new("PROJ".to_string()).unwrap();
         let mut shared_step = SharedStep::new(
             SharedStepId::new("hash123".to_string()),
             "Old Title".to_string(),
-            "PROJ".to_string(),
+            project_code.clone(),
         );
 
         shared_step.update_title("New Title".to_string());

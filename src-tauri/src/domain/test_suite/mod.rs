@@ -5,6 +5,7 @@
 mod test_suite_id;
 
 use crate::domain::common::sync_metadata::SyncMetadata;
+use crate::domain::project::ProjectCode;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
@@ -15,7 +16,7 @@ pub use test_suite_id::TestSuiteId;
 pub struct TestSuite {
     // 識別子
     id: TestSuiteId,
-    project_code: String,
+    project_code: ProjectCode,
 
     // 基本情報
     title: String,
@@ -41,7 +42,7 @@ pub struct TestSuite {
 
 impl TestSuite {
     /// 新しいテストスイートを作成
-    pub fn new(id: TestSuiteId, title: String, project_code: String) -> Self {
+    pub fn new(id: TestSuiteId, title: String, project_code: ProjectCode) -> Self {
         let now = Utc::now();
         Self {
             id,
@@ -70,7 +71,7 @@ impl TestSuite {
     }
 
     /// プロジェクトコードを取得
-    pub fn project_code(&self) -> &str {
+    pub fn project_code(&self) -> &ProjectCode {
         &self.project_code
     }
 
@@ -91,15 +92,16 @@ mod tests {
 
     #[test]
     fn test_test_suite_new() {
+        let project_code = ProjectCode::new("PROJ".to_string()).unwrap();
         let suite = TestSuite::new(
             TestSuiteId::new(1),
             "Test Suite".to_string(),
-            "PROJ".to_string(),
+            project_code.clone(),
         );
 
         assert_eq!(suite.id().value(), 1);
         assert_eq!(suite.title(), "Test Suite");
-        assert_eq!(suite.project_code(), "PROJ");
+        assert_eq!(suite.project_code().value(), "PROJ");
         assert_eq!(suite.position(), 0);
         assert!(suite.parent_id().is_none());
     }
