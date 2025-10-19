@@ -26,6 +26,7 @@ pub struct SyncMetadata {
     is_deleted: bool,
 }
 
+#[allow(dead_code)]
 impl SyncMetadata {
     /// 新しい同期メタデータを作成
     pub fn new() -> Self {
@@ -85,7 +86,7 @@ mod tests {
     fn test_sync_metadata_new() {
         // SyncMetadata::new()が存在しないため失敗する（Red）
         let metadata = SyncMetadata::new();
-        
+
         assert_eq!(metadata.sync_status(), SyncStatus::Clean);
         assert!(!metadata.is_deleted());
         assert!(metadata.remote_updated_at().is_none());
@@ -96,7 +97,7 @@ mod tests {
         // mark_local_modified()が存在しないため失敗する（Red）
         let mut metadata = SyncMetadata::new();
         metadata.mark_local_modified();
-        
+
         assert_eq!(metadata.sync_status(), SyncStatus::LocalModified);
     }
 
@@ -105,9 +106,9 @@ mod tests {
         // mark_synced()が存在しないため失敗する（Red）
         let mut metadata = SyncMetadata::new();
         let remote_time = Utc::now();
-        
+
         metadata.mark_synced(remote_time);
-        
+
         assert_eq!(metadata.sync_status(), SyncStatus::Clean);
         assert_eq!(metadata.remote_updated_at(), Some(remote_time));
     }
@@ -117,10 +118,10 @@ mod tests {
         // detect_conflict()が存在しないため失敗する（Red）
         let mut metadata = SyncMetadata::new();
         metadata.mark_local_modified();
-        
+
         let remote_time = Utc::now();
         metadata.detect_conflict(remote_time);
-        
+
         assert_eq!(metadata.sync_status(), SyncStatus::Conflict);
     }
 
@@ -129,7 +130,7 @@ mod tests {
         // mark_deleted()が存在しないため失敗する（Red）
         let mut metadata = SyncMetadata::new();
         metadata.mark_deleted();
-        
+
         assert!(metadata.is_deleted());
         assert_eq!(metadata.sync_status(), SyncStatus::LocalModified);
     }

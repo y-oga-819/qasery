@@ -26,12 +26,15 @@ impl ProjectCode {
         if value.len() < 2 || value.len() > 10 {
             return Err(ProjectCodeError::InvalidLength(value.len()));
         }
-        
+
         // 文字種チェック（英数字とハイフン、アンダースコアのみ許可）
-        if !value.chars().all(|c| c.is_alphanumeric() || c == '-' || c == '_') {
+        if !value
+            .chars()
+            .all(|c| c.is_alphanumeric() || c == '-' || c == '_')
+        {
             return Err(ProjectCodeError::InvalidCharacters);
         }
-        
+
         Ok(Self(value))
     }
 
