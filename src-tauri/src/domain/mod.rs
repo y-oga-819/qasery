@@ -3,5 +3,6 @@ pub mod common;
 pub mod models;
 pub mod project;
 pub mod repository;
+pub mod shared_step;
 pub mod test_case;
 pub mod test_suite;
