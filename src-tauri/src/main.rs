@@ -20,7 +20,8 @@ use presentation::commands::{
     list_projects,
     save_api_token,
     sync_projects,
-    // Phase 2で実装中: sync_suites, sync_cases, sync_shared_steps, save_case
+    sync_suites,
+    // Phase 2で実装中: sync_cases, sync_shared_steps, save_case
 };
 
 fn main() {
@@ -34,9 +35,10 @@ fn main() {
             list_projects, // Query
             get_project,   // Query
             sync_projects, // Command
-            // テストスイート関連コマンド（Query）
-            get_suites_tree,
-            get_suite,
+            // テストスイート関連コマンド
+            get_suites_tree, // Query
+            get_suite,       // Query
+            sync_suites,     // Command
             // テストケース関連コマンド（Query）
             get_cases_by_suite,
             get_case,
@@ -47,7 +49,7 @@ fn main() {
             // API トークン関連コマンド
             save_api_token,
             get_api_token,
-            // Phase 2で実装中: sync_suites, sync_cases, sync_shared_steps, save_case
+            // Phase 2で実装中: sync_cases, sync_shared_steps, save_case
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -14,6 +14,9 @@ use crate::domain::queries::{
     TestCaseQueryRepository, TestCaseReadModel, TestCaseStepReadModel, TestSuiteQueryRepository,
     TestSuiteReadModel,
 };
+use crate::domain::test_suite::repository::TestSuiteRepository;
+use crate::domain::test_suite::{TestSuite, TestSuiteId};
+use chrono::DateTime;
 use tauri::State;
 
 /// プロジェクト一覧を取得
@@ -136,15 +139,81 @@ pub async fn get_suite(
     query_repo.get_by_id(id).map_err(|e| e.to_string())
 }
 
-// TODO: Phase 2で再実装
-// /// Qaseからテストスイートを同期
-// #[tauri::command]
-// pub async fn sync_suites(
-//     state: State<'_, AppState>,
-//     project_code: String,
-// ) -> Result<usize, String> {
-//     todo!("Phase 2で実装")
-// }
+/// Qaseからテストスイートを同期
+///
+/// # Arguments
+/// * `state` - アプリケーション状態
+/// * `project_code` - プロジェクトコード
+///
+/// # Returns
+/// 取り込んだテストスイート数またはエラー
+#[tauri::command]
+pub async fn sync_suites(
+    state: State<'_, AppState>,
+    project_code: String,
+) -> Result<usize, String> {
+    // QaseClientを取得
+    let client = state.get_qase_client().map_err(|e| e.to_string())?;
+
+    // ProjectCodeを作成（バリデーション）
+    let project_code_obj = ProjectCode::new(project_code.clone())
+        .map_err(|e| format!("Invalid project code: {:?}", e))?;
+
+    let mut count = 0;
+    let limit = 100;
+    let mut offset = 0;
+
+    loop {
+        // Qase APIからテストスイート一覧を取得（ページング）
+        let response = client
+            .get_suites(&project_code, None, Some(limit), Some(offset))
+            .await
+            .map_err(|e| e.to_string())?;
+        let entities = response.result.entities;
+        let total = response.result.total;
+
+        // 各テストスイートをDomain Modelに変換して保存
+        for entity in &entities {
+            // TestSuiteIdを作成
+            let suite_id = TestSuiteId::new(entity.id);
+
+            // 日時文字列をパース（ISO 8601形式）
+            let created_at = DateTime::parse_from_rfc3339(&entity.created_at)
+                .map_err(|e| format!("Failed to parse created_at: {}", e))?
+                .with_timezone(&chrono::Utc);
+            let updated_at = DateTime::parse_from_rfc3339(&entity.updated_at)
+                .map_err(|e| format!("Failed to parse updated_at: {}", e))?
+                .with_timezone(&chrono::Utc);
+
+            // Domain Modelを作成
+            let test_suite = TestSuite::from_api(
+                suite_id,
+                project_code_obj.clone(),
+                entity.title.clone(),
+                entity.description.clone(),
+                entity.preconditions.clone(),
+                entity.position,
+                entity.cases_count,
+                entity.parent_id.map(TestSuiteId::new),
+                created_at,
+                updated_at,
+            );
+
+            // Repositoryで永続化（クリーンアーキテクチャに従う）
+            TestSuiteRepository::save(&*state.db, &test_suite).map_err(|e| e.to_string())?;
+
+            count += 1;
+        }
+
+        // 全件取得済みなら終了
+        if offset + entities.len() as i32 >= total {
+            break;
+        }
+        offset += limit;
+    }
+
+    Ok(count)
+}
 
 /// スイート別にテストケースを取得
 ///

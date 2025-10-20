@@ -2,6 +2,7 @@
 // Phase 6-8で実際に使用されるまで未使用警告を抑制
 #![allow(dead_code)]
 
+pub mod repository;
 mod test_suite_id;
 
 use crate::domain::common::sync_metadata::SyncMetadata;
@@ -60,6 +61,36 @@ impl TestSuite {
         }
     }
 
+    /// Qase APIから取得したデータでテストスイートを構築（Builder パターン）
+    #[allow(clippy::too_many_arguments)]
+    pub fn from_api(
+        id: TestSuiteId,
+        project_code: ProjectCode,
+        title: String,
+        description: Option<String>,
+        preconditions: Option<String>,
+        position: i32,
+        cases_count: i32,
+        parent_id: Option<TestSuiteId>,
+        created_at: DateTime<Utc>,
+        updated_at: DateTime<Utc>,
+    ) -> Self {
+        Self {
+            id,
+            project_code,
+            title,
+            description,
+            preconditions,
+            parent_id,
+            position,
+            cases_count,
+            created_at,
+            updated_at,
+            sync_metadata: SyncMetadata::new(),
+            children: None,
+        }
+    }
+
     /// テストスイートIDを取得
     pub fn id(&self) -> TestSuiteId {
         self.id
@@ -83,6 +114,36 @@ impl TestSuite {
     /// 親IDを取得
     pub fn parent_id(&self) -> Option<TestSuiteId> {
         self.parent_id
+    }
+
+    /// 説明を取得
+    pub fn description(&self) -> Option<&str> {
+        self.description.as_deref()
+    }
+
+    /// 前提条件を取得
+    pub fn preconditions(&self) -> Option<&str> {
+        self.preconditions.as_deref()
+    }
+
+    /// ケース数を取得
+    pub fn cases_count(&self) -> i32 {
+        self.cases_count
+    }
+
+    /// 作成日時を取得
+    pub fn created_at(&self) -> DateTime<Utc> {
+        self.created_at
+    }
+
+    /// 更新日時を取得
+    pub fn updated_at(&self) -> DateTime<Utc> {
+        self.updated_at
+    }
+
+    /// 同期メタデータを取得
+    pub fn sync_metadata(&self) -> &SyncMetadata {
+        &self.sync_metadata
     }
 }
 

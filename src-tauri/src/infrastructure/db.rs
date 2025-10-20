@@ -9,6 +9,7 @@ mod project_v2; // 新しいdomain::projectのProject用（DDD設計）
 mod shared_step;
 mod test_case;
 mod test_suite;
+mod test_suite_v2; // 新しいdomain::test_suiteのTestSuite用（DDD設計）
 
 // CQRS Query側のRepository実装
 pub mod queries;
