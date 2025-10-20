@@ -8,6 +8,9 @@
 //! - ビジネスロジックは含まない（Command側の集約が担当）
 //! - シリアライズ/デシリアライズ可能（Tauri経由でフロントエンドに送信）
 
+// 段階的実装中のため、未使用の警告を抑制
+#![allow(dead_code)]
+
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 

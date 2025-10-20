@@ -7,6 +7,9 @@
 //! - ReadModelの取得
 //! - データ更新は含まない（Command側のRepositoryが担当）
 
+// 段階的実装中のため、未使用の警告を抑制
+#![allow(dead_code)]
+
 use super::read_models::*;
 use anyhow::Result;
 
