@@ -4,8 +4,6 @@
 //! データベースからReadModelを取得する。
 
 pub mod project;
-
-// TODO: 次のPRで実装
-// pub mod test_suite;
-// pub mod test_case;
-// pub mod shared_step;
+pub mod shared_step;
+pub mod test_case;
+pub mod test_suite;
