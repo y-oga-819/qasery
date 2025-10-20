@@ -8,9 +8,18 @@ mod presentation;
 
 use application::appstate::AppState;
 use presentation::commands::{
-    get_api_token, get_case, get_case_steps, get_cases_by_suite, get_project, get_shared_step,
-    get_shared_steps, get_suite, get_suites_tree, list_projects, save_api_token, save_case,
-    sync_cases, sync_projects, sync_shared_steps, sync_suites,
+    get_api_token,
+    get_case,
+    get_case_steps,
+    get_cases_by_suite,
+    get_project,
+    get_shared_step,
+    get_shared_steps,
+    get_suite,
+    get_suites_tree,
+    list_projects,
+    save_api_token,
+    // Phase 2で再実装: sync_projects, sync_suites, sync_cases, sync_shared_steps, save_case
 };
 
 fn main() {
@@ -20,27 +29,23 @@ fn main() {
     tauri::Builder::default()
         .manage(app_state) // AppStateをTauriに登録
         .invoke_handler(tauri::generate_handler![
-            // プロジェクト関連コマンド
+            // プロジェクト関連コマンド（Query）
             list_projects,
             get_project,
-            sync_projects,
-            // テストスイート関連コマンド
+            // テストスイート関連コマンド（Query）
             get_suites_tree,
             get_suite,
-            sync_suites,
-            // テストケース関連コマンド
+            // テストケース関連コマンド（Query）
             get_cases_by_suite,
             get_case,
             get_case_steps,
-            save_case,
-            sync_cases,
-            // Shared Step関連コマンド
+            // Shared Step関連コマンド（Query）
             get_shared_steps,
             get_shared_step,
-            sync_shared_steps,
             // API トークン関連コマンド
             save_api_token,
             get_api_token,
+            // Phase 2で再実装: sync_projects, sync_suites, sync_cases, sync_shared_steps, save_case
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
