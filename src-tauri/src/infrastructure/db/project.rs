@@ -144,10 +144,7 @@ impl ProjectRepository for Database {
             .lock()
             .map_err(|e| anyhow::anyhow!("Mutex lock failed: {}", e))?;
 
-        conn.execute(
-            "UPDATE projects SET is_deleted = 1 WHERE code = ?",
-            [code],
-        )?;
+        conn.execute("UPDATE projects SET is_deleted = 1 WHERE code = ?", [code])?;
 
         Ok(())
     }
