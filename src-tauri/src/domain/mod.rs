@@ -2,6 +2,7 @@
 pub mod common;
 pub mod models;
 pub mod project;
+pub mod queries; // CQRS Query側（参照系）
 pub mod repository;
 pub mod shared_step;
 pub mod test_case;

@@ -9,6 +9,9 @@ mod shared_step;
 mod test_case;
 mod test_suite;
 
+// CQRS Query側のRepository実装
+pub mod queries;
+
 use anyhow::{Context, Result};
 use rusqlite::Connection;
 use std::path::Path;
