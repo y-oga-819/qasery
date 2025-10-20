@@ -4,7 +4,8 @@
 #![allow(dead_code)]
 
 // Repository実装の各モジュール
-mod project;
+mod project; // 古いdomain::modelsのProject用（Phase1互換）
+mod project_v2; // 新しいdomain::projectのProject用（DDD設計）
 mod shared_step;
 mod test_case;
 mod test_suite;

@@ -1,12 +1,14 @@
 // Tauri commands (functions called from frontend)
 //
-// Phase 1: Query側をReadModelに移行
-// Command側（sync_*, save_*）は次フェーズで実装
+// Phase 1: Query側をReadModelに移行 ✅
+// Phase 2: Command側（sync_*, save_*）を実装 ← 現在
 
 #![allow(dead_code)]
 #![allow(unused_variables)]
 
 use crate::application::appstate::AppState;
+use crate::domain::project::repository::ProjectRepository;
+use crate::domain::project::{Project, ProjectCode};
 use crate::domain::queries::{
     ProjectQueryRepository, ProjectReadModel, SharedStepQueryRepository, SharedStepReadModel,
     TestCaseQueryRepository, TestCaseReadModel, TestCaseStepReadModel, TestSuiteQueryRepository,
@@ -44,19 +46,55 @@ pub async fn get_project(
     query_repo.get_by_code(&code).map_err(|e| e.to_string())
 }
 
-// TODO: Phase 2で再実装
-// /// Qaseからプロジェクトを同期
-// ///
-// /// # Arguments
-// /// * `state` - アプリケーション状態
-// ///
-// /// # Returns
-// /// 取り込んだプロジェクト数またはエラー
-// #[tauri::command]
-// pub async fn sync_projects(state: State<'_, AppState>) -> Result<usize, String> {
-//     // Phase 2で新しいDomainモデルを使って再実装
-//     todo!("Phase 2で実装")
-// }
+/// Qaseからプロジェクトを同期
+///
+/// # Arguments
+/// * `state` - アプリケーション状態
+///
+/// # Returns
+/// 取り込んだプロジェクト数またはエラー
+#[tauri::command]
+pub async fn sync_projects(state: State<'_, AppState>) -> Result<usize, String> {
+    // QaseClientを取得
+    let client = state.get_qase_client().map_err(|e| e.to_string())?;
+
+    let mut count = 0;
+    let limit = 100;
+    let mut offset = 0;
+
+    loop {
+        // Qase APIからプロジェクト一覧を取得（ページング）
+        let response = client
+            .get_projects(Some(limit), Some(offset))
+            .await
+            .map_err(|e| e.to_string())?;
+        let entities = response.result.entities;
+        let total = response.result.total;
+
+        // 各プロジェクトをDomain Modelに変換して保存
+        for entity in &entities {
+            // ProjectCodeを作成（バリデーション付き）
+            let code = ProjectCode::new(entity.code.clone())
+                .map_err(|e| format!("Invalid project code: {:?}", e))?;
+
+            // Domain Modelを作成
+            let project = Project::new(code, entity.title.clone(), None);
+
+            // Repositoryで永続化（クリーンアーキテクチャに従う）
+            ProjectRepository::save(&*state.db, &project).map_err(|e| e.to_string())?;
+
+            count += 1;
+        }
+
+        // 全件取得済みなら終了
+        if offset + entities.len() as i32 >= total {
+            break;
+        }
+        offset += limit;
+    }
+
+    Ok(count)
+}
 
 /// プロジェクトのテストスイート一覧を取得（階層構造）
 ///

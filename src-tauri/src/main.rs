@@ -19,7 +19,8 @@ use presentation::commands::{
     get_suites_tree,
     list_projects,
     save_api_token,
-    // Phase 2で再実装: sync_projects, sync_suites, sync_cases, sync_shared_steps, save_case
+    sync_projects,
+    // Phase 2で実装中: sync_suites, sync_cases, sync_shared_steps, save_case
 };
 
 fn main() {
@@ -29,9 +30,10 @@ fn main() {
     tauri::Builder::default()
         .manage(app_state) // AppStateをTauriに登録
         .invoke_handler(tauri::generate_handler![
-            // プロジェクト関連コマンド（Query）
-            list_projects,
-            get_project,
+            // プロジェクト関連コマンド
+            list_projects, // Query
+            get_project,   // Query
+            sync_projects, // Command
             // テストスイート関連コマンド（Query）
             get_suites_tree,
             get_suite,
@@ -45,7 +47,7 @@ fn main() {
             // API トークン関連コマンド
             save_api_token,
             get_api_token,
-            // Phase 2で再実装: sync_projects, sync_suites, sync_cases, sync_shared_steps, save_case
+            // Phase 2で実装中: sync_suites, sync_cases, sync_shared_steps, save_case
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

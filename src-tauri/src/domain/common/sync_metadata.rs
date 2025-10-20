@@ -48,6 +48,11 @@ impl SyncMetadata {
         self.is_deleted
     }
 
+    /// ローカル更新日時を取得
+    pub fn local_updated_at(&self) -> DateTime<Utc> {
+        self.local_updated_at
+    }
+
     /// リモート更新日時を取得
     pub fn remote_updated_at(&self) -> Option<DateTime<Utc>> {
         self.remote_updated_at
