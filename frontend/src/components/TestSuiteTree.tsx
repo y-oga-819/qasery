@@ -133,7 +133,7 @@ function TestSuiteTreeItem({ suite, level, selectedId, onSelect }: TestSuiteTree
         {hasChildren ? (
           <button
             onClick={() => setIsExpanded(!isExpanded)}
-            className="flex-shrink-0 w-8 h-8 flex items-center justify-center text-gray-500 hover:text-gray-700"
+            className="flex-shrink-0 w-6 h-6 flex items-center justify-center text-gray-500 hover:text-gray-700"
           >
             <svg
               className={`w-4 h-4 transition-transform ${isExpanded ? 'rotate-90' : ''}`}
@@ -145,7 +145,7 @@ function TestSuiteTreeItem({ suite, level, selectedId, onSelect }: TestSuiteTree
             </svg>
           </button>
         ) : (
-          <div className="w-8" />
+          <div className="w-6" />
         )}
 
 {/* スイート情報（クリック可能） */}
