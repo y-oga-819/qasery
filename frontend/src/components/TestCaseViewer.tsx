@@ -96,6 +96,11 @@ function TestCaseList({ cases, onSelect }: TestCaseListProps) {
         >
           <div className="flex items-start justify-between">
             <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-xs font-mono text-gray-500">
+                  {testCase.project_code}-{testCase.id}
+                </span>
+              </div>
               <h3 className="font-medium text-gray-900 truncate">{testCase.title}</h3>
               {testCase.description && (
                 <p className="text-sm text-gray-600 mt-1 line-clamp-2">{testCase.description}</p>
