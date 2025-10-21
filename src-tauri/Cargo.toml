@@ -17,5 +17,8 @@ anyhow = "1.0"
 thiserror = "1.0"
 keyring = "2.3"
 
+[dev-dependencies]
+wiremock = "0.6"
+
 [build-dependencies]
 tauri-build = { version = "2.0", features = [] }
