@@ -12,6 +12,11 @@
     "active": false,
     "targets": "all"
   },
+  "plugins": {
+    "shell": {
+      "open": true
+    }
+  },
   "app": {
     "windows": [
       {
