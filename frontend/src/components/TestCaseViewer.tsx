@@ -391,13 +391,13 @@ function StepItem({ step, level }: StepItemProps) {
               {step.action || 'アクション'}
             </h5>
             {step.expected_result && (
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-gray-600 m-0 leading-normal">
                 <span className="font-medium text-gray-700">期待結果: </span>
                 {step.expected_result}
               </p>
             )}
             {step.data && (
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-gray-500 mt-1 m-0 leading-normal">
                 <span className="font-medium">データ: </span>
                 {step.data}
               </p>
