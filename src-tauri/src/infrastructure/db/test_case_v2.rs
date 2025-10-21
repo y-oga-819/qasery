@@ -302,7 +302,7 @@ impl Database {
             .map_err(|e| anyhow::anyhow!("Mutex lock failed: {}", e))?;
 
         let mut stmt = conn.prepare(
-            "SELECT id, shared_step_hash, position
+            "SELECT id, shared_step_hash, position, action, expected_result, data
              FROM test_case_steps
              WHERE test_case_id = ?
              ORDER BY position ASC",
@@ -313,19 +313,29 @@ impl Database {
                 let id: i64 = row.get(0)?;
                 let shared_step_hash: Option<String> = row.get(1)?;
                 let position: i32 = row.get(2)?;
+                let action: String = row.get(3)?;
+                let expected_result: Option<String> = row.get(4)?;
+                let data: Option<String> = row.get(5)?;
 
-                Ok((id, shared_step_hash, position))
+                Ok((
+                    id,
+                    shared_step_hash,
+                    position,
+                    action,
+                    expected_result,
+                    data,
+                ))
             })?
             .collect::<Result<Vec<_>, _>>()?;
 
         let mut result = Vec::new();
-        for (id, shared_step_hash, position) in steps {
+        for (id, shared_step_hash, position, action, expected_result, data) in steps {
             let ordered_step = if let Some(hash) = shared_step_hash {
                 // 共有ステップ
                 OrderedStep::new_shared(hash, position)
             } else {
                 // 固有ステップ
-                OrderedStep::new_own(StepId::new(id), position)
+                OrderedStep::new_own(StepId::new(id), position, action, expected_result, data)
             };
             result.push(ordered_step);
         }
@@ -341,21 +351,29 @@ impl Database {
         step: &OrderedStep,
     ) -> Result<()> {
         match step.step_type() {
-            StepType::Own(step_id) => {
+            StepType::Own {
+                id,
+                action,
+                expected_result,
+                data,
+            } => {
                 // 固有ステップ（shared_step_hashはNULL）
                 conn.execute(
                     "INSERT INTO test_case_steps
                      (id, test_case_id, hash, shared_step_hash, position, action, expected_result, data)
-                     VALUES (?1, ?2, ?3, NULL, ?4, '', NULL, NULL)",
+                     VALUES (?1, ?2, ?3, NULL, ?4, ?5, ?6, ?7)",
                     params![
-                        step_id.value(),
+                        id.value(),
                         test_case_id,
-                        format!("step_{}", step_id.value()), // hashは一意性のため
+                        format!("step_{}", id.value()), // hashは一意性のため
                         step.position(),
+                        action,
+                        expected_result,
+                        data,
                     ],
                 )?;
             }
-            StepType::Shared(shared_hash) => {
+            StepType::Shared { hash } => {
                 // 共有ステップ
                 conn.execute(
                     "INSERT INTO test_case_steps
@@ -363,8 +381,8 @@ impl Database {
                      VALUES (?1, ?2, ?3, ?4, '', NULL, NULL)",
                     params![
                         test_case_id,
-                        format!("shared_{}", shared_hash), // hashは一意性のため
-                        shared_hash,
+                        format!("shared_{}", hash), // hashは一意性のため
+                        hash,
                         step.position(),
                     ],
                 )?;

@@ -117,13 +117,12 @@ pub async fn get_suites_tree(
     project_code: String,
 ) -> Result<Vec<TestSuiteReadModel>, String> {
     let query_repo = &*state.db as &dyn TestSuiteQueryRepository;
-    let suites = query_repo
+    let mut suites = query_repo
         .get_by_project(&project_code)
         .map_err(|e| e.to_string())?;
 
-    // TODO: 階層構造の構築が必要な場合は実装
-    // 現時点ではフラットなリストを返す
-    Ok(suites)
+    // 階層構造を構築
+    build_suite_tree(&mut suites)
 }
 
 /// テストスイートを取得
@@ -336,7 +335,16 @@ pub async fn sync_cases(state: State<'_, AppState>, project_code: String) -> Res
                             // 固有ステップ（仮のIDを生成）
                             // 注意: Qase APIのstepには固有のIDがないため、positionベースで生成
                             let step_id = StepId::new(entity.id * 10000 + step.position as i64);
-                            OrderedStep::new_own(step_id, step.position)
+                            let action = step.action.clone();
+                            let expected_result = step.expected_result.clone();
+                            let data = step.data.clone();
+                            OrderedStep::new_own(
+                                step_id,
+                                step.position,
+                                action,
+                                expected_result,
+                                data,
+                            )
                         }
                     })
                     .collect()
@@ -454,8 +462,13 @@ pub async fn sync_shared_steps(
     state: State<'_, AppState>,
     project_code: String,
 ) -> Result<usize, String> {
+    println!("sync_shared_steps called for project: {}", project_code);
+
     // QaseClientを取得
-    let client = state.get_qase_client().map_err(|e| e.to_string())?;
+    let client = state.get_qase_client().map_err(|e| {
+        println!("Failed to get Qase client: {}", e);
+        e.to_string()
+    })?;
 
     // ProjectCodeを作成（バリデーション）
     let project_code_obj = ProjectCode::new(project_code.clone())
@@ -467,10 +480,19 @@ pub async fn sync_shared_steps(
 
     loop {
         // Qase APIからShared Step一覧を取得（ページング）
+        println!("Fetching shared steps: offset={}, limit={}", offset, limit);
         let response = client
             .get_shared_steps(&project_code, None, Some(limit), Some(offset))
             .await
-            .map_err(|e| e.to_string())?;
+            .map_err(|e| {
+                println!("Failed to fetch shared steps from API: {}", e);
+                e.to_string()
+            })?;
+        println!(
+            "Fetched {} shared steps (total: {})",
+            response.result.entities.len(),
+            response.result.total
+        );
         let entities = response.result.entities;
         let total = response.result.total;
 
@@ -506,6 +528,7 @@ pub async fn sync_shared_steps(
             };
 
             // Domain Modelを作成
+            let steps_count = steps.len();
             let shared_step = SharedStep::from_api(
                 SharedStepId::new(entity.hash.clone()),
                 project_code_obj.clone(),
@@ -517,7 +540,14 @@ pub async fn sync_shared_steps(
             );
 
             // Repositoryで永続化（クリーンアーキテクチャに従う）
-            SharedStepRepository::save(&*state.db, &shared_step).map_err(|e| e.to_string())?;
+            println!(
+                "Saving shared step: hash={}, title={}, steps_count={}",
+                entity.hash, entity.title, steps_count
+            );
+            SharedStepRepository::save(&*state.db, &shared_step).map_err(|e| {
+                println!("Failed to save shared step {}: {}", entity.hash, e);
+                e.to_string()
+            })?;
 
             count += 1;
         }
@@ -529,5 +559,51 @@ pub async fn sync_shared_steps(
         offset += limit;
     }
 
+    println!("sync_shared_steps completed: {} shared steps saved", count);
     Ok(count)
+}
+
+/// テストスイートリストから階層構造を構築
+///
+/// # Arguments
+/// * `suites` - フラットなテストスイートリスト
+///
+/// # Returns
+/// ルートレベルのテストスイート（子を含む）
+fn build_suite_tree(
+    suites: &mut Vec<TestSuiteReadModel>,
+) -> Result<Vec<TestSuiteReadModel>, String> {
+    use std::collections::HashMap;
+
+    // parent_idでグループ化
+    let mut children_map: HashMap<Option<i64>, Vec<TestSuiteReadModel>> = HashMap::new();
+
+    for suite in suites.drain(..) {
+        children_map
+            .entry(suite.parent_id)
+            .or_default()
+            .push(suite);
+    }
+
+    // 再帰的に階層構造を構築
+    fn build_children(
+        parent_id: Option<i64>,
+        children_map: &mut HashMap<Option<i64>, Vec<TestSuiteReadModel>>,
+    ) -> Vec<TestSuiteReadModel> {
+        if let Some(mut children) = children_map.remove(&parent_id) {
+            for child in &mut children {
+                let child_id = Some(child.id);
+                let grandchildren = build_children(child_id, children_map);
+                if !grandchildren.is_empty() {
+                    child.children = Some(grandchildren);
+                }
+            }
+            children
+        } else {
+            Vec::new()
+        }
+    }
+
+    // ルートレベル（parent_id = None）から構築
+    Ok(build_children(None, &mut children_map))
 }

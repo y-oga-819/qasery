@@ -282,7 +282,13 @@ mod tests {
             project_code.clone(),
         );
 
-        let step = OrderedStep::new_own(StepId::new(1), 0);
+        let step = OrderedStep::new_own(
+            StepId::new(1),
+            0,
+            "Test action".to_string(),
+            Some("Expected result".to_string()),
+            None,
+        );
         test_case.add_step(step);
 
         assert_eq!(test_case.steps().len(), 1);
@@ -302,7 +308,13 @@ mod tests {
             project_code.clone(),
         );
 
-        let step = OrderedStep::new_own(StepId::new(1), 0);
+        let step = OrderedStep::new_own(
+            StepId::new(1),
+            0,
+            "Test action".to_string(),
+            Some("Expected result".to_string()),
+            None,
+        );
         test_case.add_step(step);
 
         let result = test_case.remove_step(0);

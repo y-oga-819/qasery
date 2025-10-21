@@ -147,13 +147,12 @@ impl SharedStepRepositoryTrait for Database {
         // SharedStepを保存
         conn.execute(
             "INSERT OR REPLACE INTO shared_steps
-             (hash, project_code, title, action, cases_count, created_at, updated_at, local_updated_at, remote_updated_at, sync_status, is_deleted)
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11)",
+             (hash, project_code, title, cases_count, created_at, updated_at, local_updated_at, remote_updated_at, sync_status, is_deleted)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)",
             params![
                 shared_step.id().value(),
                 shared_step.project_code().value(),
                 shared_step.title(),
-                "", // actionは空文字（SharedStep全体としてのactionは不要）
                 shared_step.cases_count(),
                 shared_step.created_at().to_rfc3339(),
                 shared_step.updated_at().to_rfc3339(),

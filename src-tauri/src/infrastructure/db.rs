@@ -147,8 +147,6 @@ impl Database {
                 hash TEXT PRIMARY KEY,
                 project_code TEXT NOT NULL,
                 title TEXT NOT NULL,
-                action TEXT NOT NULL,
-                expected_result TEXT NOT NULL,
                 cases_count INTEGER NOT NULL DEFAULT 0,
                 created_at TEXT NOT NULL,
                 updated_at TEXT NOT NULL,
