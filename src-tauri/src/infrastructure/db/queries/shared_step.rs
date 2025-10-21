@@ -16,7 +16,7 @@ impl SharedStepQueryRepository for Database {
             .lock()
             .map_err(|e| anyhow::anyhow!("Mutex lock failed: {}", e))?;
         let mut stmt = conn.prepare(
-            "SELECT hash, project_code, title, action, expected_result, cases_count,
+            "SELECT hash, project_code, title, cases_count,
                     created_at, updated_at, local_updated_at, remote_updated_at, sync_status, is_deleted
              FROM shared_steps
              WHERE project_code = ? AND is_deleted = 0",
@@ -25,19 +25,19 @@ impl SharedStepQueryRepository for Database {
         let shared_steps = stmt
             .query_map([project_code], |row| {
                 let created_at = row
-                    .get::<_, String>(6)?
+                    .get::<_, String>(4)?
                     .parse()
                     .map_err(|e| rusqlite::Error::ToSqlConversionFailure(Box::new(e)))?;
                 let updated_at = row
-                    .get::<_, String>(7)?
+                    .get::<_, String>(5)?
                     .parse()
                     .map_err(|e| rusqlite::Error::ToSqlConversionFailure(Box::new(e)))?;
                 let local_updated_at = row
-                    .get::<_, String>(8)?
+                    .get::<_, String>(6)?
                     .parse()
                     .map_err(|e| rusqlite::Error::ToSqlConversionFailure(Box::new(e)))?;
 
-                let sync_status_str = row.get::<_, String>(10)?;
+                let sync_status_str = row.get::<_, String>(8)?;
                 let sync_status = match sync_status_str.as_str() {
                     "clean" => SyncStatus::Clean,
                     "local_modified" => SyncStatus::LocalModified,
@@ -54,17 +54,15 @@ impl SharedStepQueryRepository for Database {
                     hash: row.get(0)?,
                     project_code: row.get(1)?,
                     title: row.get(2)?,
-                    action: row.get(3)?,
-                    expected_result: row.get(4)?,
-                    cases_count: row.get(5)?,
+                    cases_count: row.get(3)?,
                     created_at,
                     updated_at,
                     local_updated_at,
                     remote_updated_at: row
-                        .get::<_, Option<String>>(9)?
+                        .get::<_, Option<String>>(7)?
                         .and_then(|s| s.parse().ok()),
                     sync_status,
-                    is_deleted: row.get(11)?,
+                    is_deleted: row.get(9)?,
                 })
             })?
             .collect::<Result<Vec<_>, _>>()?;
@@ -78,7 +76,7 @@ impl SharedStepQueryRepository for Database {
             .lock()
             .map_err(|e| anyhow::anyhow!("Mutex lock failed: {}", e))?;
         let mut stmt = conn.prepare(
-            "SELECT hash, project_code, title, action, expected_result, cases_count,
+            "SELECT hash, project_code, title, cases_count,
                     created_at, updated_at, local_updated_at, remote_updated_at, sync_status, is_deleted
              FROM shared_steps
              WHERE hash = ? AND is_deleted = 0",
@@ -86,19 +84,19 @@ impl SharedStepQueryRepository for Database {
 
         let result = stmt.query_row([hash], |row| {
             let created_at = row
-                .get::<_, String>(6)?
+                .get::<_, String>(4)?
                 .parse()
                 .map_err(|e| rusqlite::Error::ToSqlConversionFailure(Box::new(e)))?;
             let updated_at = row
-                .get::<_, String>(7)?
+                .get::<_, String>(5)?
                 .parse()
                 .map_err(|e| rusqlite::Error::ToSqlConversionFailure(Box::new(e)))?;
             let local_updated_at = row
-                .get::<_, String>(8)?
+                .get::<_, String>(6)?
                 .parse()
                 .map_err(|e| rusqlite::Error::ToSqlConversionFailure(Box::new(e)))?;
 
-            let sync_status_str = row.get::<_, String>(10)?;
+            let sync_status_str = row.get::<_, String>(8)?;
             let sync_status = match sync_status_str.as_str() {
                 "clean" => SyncStatus::Clean,
                 "local_modified" => SyncStatus::LocalModified,
@@ -115,17 +113,15 @@ impl SharedStepQueryRepository for Database {
                 hash: row.get(0)?,
                 project_code: row.get(1)?,
                 title: row.get(2)?,
-                action: row.get(3)?,
-                expected_result: row.get(4)?,
-                cases_count: row.get(5)?,
+                cases_count: row.get(3)?,
                 created_at,
                 updated_at,
                 local_updated_at,
                 remote_updated_at: row
-                    .get::<_, Option<String>>(9)?
+                    .get::<_, Option<String>>(7)?
                     .and_then(|s| s.parse().ok()),
                 sync_status,
-                is_deleted: row.get(11)?,
+                is_deleted: row.get(9)?,
             })
         });
 

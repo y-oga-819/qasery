@@ -633,8 +633,6 @@ impl SharedStepService {
             hash: entity.hash.clone(),
             project_code: project_code.to_string(),
             title: entity.title.clone(),
-            action: entity.action.clone(),
-            expected_result: entity.expected_result.clone().unwrap_or_default(),
             cases_count: entity.cases_count,
             created_at,
             updated_at,

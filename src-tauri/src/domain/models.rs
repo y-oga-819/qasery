@@ -136,10 +136,6 @@ pub struct SharedStep {
     pub project_code: String,
     /// Shared Step名
     pub title: String,
-    /// アクション（実行内容）
-    pub action: String,
-    /// 期待される結果
-    pub expected_result: String,
     /// このShared Stepを使用しているテストケース数
     pub cases_count: i32,
     /// 作成日時（Qase API）

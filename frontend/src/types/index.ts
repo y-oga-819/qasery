@@ -129,6 +129,28 @@ export interface TestCaseStep {
 }
 
 /**
+ * Shared Stepステップ
+ */
+export interface SharedStepStep {
+  /** ステップID（ローカルDB用） */
+  id: number;
+  /** 所属するShared StepハッシュID */
+  shared_step_hash: string;
+  /** ステップハッシュ（Qase API） */
+  hash: string;
+  /** 表示順序 */
+  position: number;
+  /** アクション（実行内容） */
+  action: string;
+  /** 期待される結果 */
+  expected_result: string | null;
+  /** データ（入力データなど） */
+  data: string | null;
+  /** 親ステップID（ネストされたステップ用） */
+  parent_step_id: number | null;
+}
+
+/**
  * テストスイートのツリー構造
  * （階層表示用）
  */
