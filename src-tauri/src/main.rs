@@ -33,6 +33,7 @@ fn main() {
     let app_state = AppState::new("qasery.db").expect("Failed to initialize AppState");
 
     tauri::Builder::default()
+        .plugin(tauri_plugin_shell::init())
         .manage(app_state) // AppStateをTauriに登録
         .invoke_handler(tauri::generate_handler![
             // プロジェクト関連コマンド
