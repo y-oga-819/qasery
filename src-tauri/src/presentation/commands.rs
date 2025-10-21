@@ -7,6 +7,8 @@
 #![allow(unused_variables)]
 
 use crate::application::appstate::AppState;
+use crate::domain::models::SharedStep as ModelsSharedStep;
+use crate::domain::models::SharedStepStep as ModelsSharedStepStep;
 use crate::domain::project::repository::ProjectRepository;
 use crate::domain::project::{Project, ProjectCode};
 use crate::domain::queries::{
@@ -14,8 +16,6 @@ use crate::domain::queries::{
     TestCaseQueryRepository, TestCaseReadModel, TestCaseStepReadModel, TestSuiteQueryRepository,
     TestSuiteReadModel,
 };
-use crate::domain::models::SharedStep as ModelsSharedStep;
-use crate::domain::models::SharedStepStep as ModelsSharedStepStep;
 use crate::domain::repository::SharedStepRepository;
 use crate::domain::test_case::repository::TestCaseRepository;
 use crate::domain::test_case::{OrderedStep, StepId, TestCase, TestCaseId};
@@ -572,10 +572,12 @@ pub async fn sync_shared_steps(
 
             // SharedStepのステップを保存
             if !steps.is_empty() {
-                SharedStepRepository::save_steps(&*state.db, &entity.hash, &steps).map_err(|e| {
-                    println!("Failed to save shared step steps {}: {}", entity.hash, e);
-                    e.to_string()
-                })?;
+                SharedStepRepository::save_steps(&*state.db, &entity.hash, &steps).map_err(
+                    |e| {
+                        println!("Failed to save shared step steps {}: {}", entity.hash, e);
+                        e.to_string()
+                    },
+                )?;
             }
 
             count += 1;

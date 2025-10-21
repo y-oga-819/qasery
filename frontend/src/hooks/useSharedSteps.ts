@@ -7,8 +7,6 @@ export interface SharedStep {
   hash: string;
   project_code: string;
   title: string;
-  action: string;
-  expected_result: string;
   cases_count: number;
   created_at: string;
   updated_at: string;
