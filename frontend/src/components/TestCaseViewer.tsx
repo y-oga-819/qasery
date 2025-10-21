@@ -5,6 +5,7 @@ import { useStore } from '../store';
 import { useTestCases } from '../hooks/useTestCases';
 import { useTestSteps } from '../hooks/useTestSteps';
 import { useSharedSteps } from '../hooks/useSharedSteps';
+import { useSharedStepSteps } from '../hooks/useSharedStepSteps';
 import { Button, Spinner, ErrorMessage } from './common';
 
 /**
@@ -316,20 +317,22 @@ function TestStepsList({ steps, sharedStepsMap }: TestStepsListProps) {
           const sharedStep = sharedStepHash ? sharedStepsMap.get(sharedStepHash) : null;
           const sharedStepName = sharedStep?.title || group[0].action || 'Shared Step';
 
+          // Shared StepハッシュIDがある場合は専用コンポーネントで表示
+          if (sharedStepHash) {
+            return (
+              <SharedStepGroup
+                key={groupIndex}
+                sharedStepHash={sharedStepHash}
+                sharedStepName={sharedStepName}
+              />
+            );
+          }
+
+          // Shared StepハッシュIDがない場合はフォールバック（通常は起きない）
           return (
             <div key={groupIndex} className="border-2 border-purple-300 rounded-lg p-4 bg-purple-50">
               <div className="mb-3">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-purple-200 text-purple-800">
-                    Shared Step
-                  </span>
-                  {sharedStepHash && (
-                    <span className="text-xs text-gray-500">
-                      ({sharedStepHash.substring(0, 8)}...)
-                    </span>
-                  )}
-                </div>
-                <h4 className="text-sm font-semibold text-purple-900 mt-2">
+                <h4 className="text-sm font-semibold text-purple-900">
                   {sharedStepName}
                 </h4>
               </div>
@@ -401,6 +404,54 @@ function StepItem({ step, level }: StepItemProps) {
         <div className="mt-2">
           {step.children.map((child: any) => (
             <StepItem key={child.id} step={child} level={level + 1} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Shared Stepグループコンポーネント
+ * Shared Stepの詳細（個別ステップ）を取得して表示
+ */
+interface SharedStepGroupProps {
+  sharedStepHash: string;
+  sharedStepName: string;
+}
+
+function SharedStepGroup({ sharedStepHash, sharedStepName }: SharedStepGroupProps) {
+  const { steps, loading, error } = useSharedStepSteps(sharedStepHash);
+
+  return (
+    <div className="border-2 border-purple-300 rounded-lg p-4 bg-purple-50">
+      <div className="mb-3">
+        <div className="flex items-center gap-2 mb-1">
+          <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-purple-200 text-purple-800">
+            Shared Step
+          </span>
+          <span className="text-xs text-gray-500">
+            ({sharedStepHash.substring(0, 8)}...)
+          </span>
+        </div>
+        <h4 className="text-sm font-semibold text-purple-900 mt-2">
+          {sharedStepName}
+        </h4>
+      </div>
+
+      {/* Shared Stepの個別ステップを表示 */}
+      {loading ? (
+        <div className="flex items-center justify-center py-4">
+          <Spinner />
+        </div>
+      ) : error ? (
+        <ErrorMessage message={error} />
+      ) : steps.length === 0 ? (
+        <p className="text-sm text-gray-500 text-center py-2">ステップがありません</p>
+      ) : (
+        <div className="space-y-2">
+          {steps.map((step) => (
+            <StepItem key={step.id} step={step} level={0} />
           ))}
         </div>
       )}
