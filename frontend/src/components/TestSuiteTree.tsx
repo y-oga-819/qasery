@@ -145,9 +145,7 @@ function TestSuiteTreeItem({ suite, level, selectedId, onSelect }: TestSuiteTree
             </svg>
           </button>
         ) : (
-          <div className="w-8 flex items-center justify-center">
-            <div className="w-1 h-1 rounded-full bg-gray-400" />
-          </div>
+          <div className="w-8" />
         )}
 
 {/* スイート情報（クリック可能） */}
