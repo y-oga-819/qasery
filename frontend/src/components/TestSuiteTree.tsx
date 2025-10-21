@@ -10,7 +10,7 @@ import type { TestSuite } from '../types';
  * テストスイートツリーコンポーネント
  */
 export function TestSuiteTree() {
-  const { selectedProject, selectedSuite, selectSuite } = useStore();
+  const { selectedProject, selectedSuite, selectSuite, expandedSuiteIds, toggleSuiteExpanded } = useStore();
   const { suites, loading, error } = useTestSuites(selectedProject?.code || null);
 
   // プロジェクトが変更されたら選択をクリア
@@ -71,6 +71,8 @@ export function TestSuiteTree() {
                 suite={suite}
                 level={0}
                 selectedId={selectedSuite?.id || null}
+                expandedIds={expandedSuiteIds}
+                onToggleExpand={toggleSuiteExpanded}
                 onSelect={handleSuiteClick}
               />
             ))}
@@ -88,11 +90,13 @@ interface TestSuiteTreeItemProps {
   suite: TestSuite & { children?: TestSuite[] };
   level: number;
   selectedId: number | null;
+  expandedIds: Set<number>;
+  onToggleExpand: (suiteId: number) => void;
   onSelect: (suite: TestSuite) => void;
 }
 
-function TestSuiteTreeItem({ suite, level, selectedId, onSelect }: TestSuiteTreeItemProps) {
-  const [isExpanded, setIsExpanded] = useState(true);
+function TestSuiteTreeItem({ suite, level, selectedId, expandedIds, onToggleExpand, onSelect }: TestSuiteTreeItemProps) {
+  const isExpanded = expandedIds.has(suite.id) || level === 0; // デフォルトでルートは展開
   const hasChildren = suite.children && suite.children.length > 0;
   const isSelected = selectedId === suite.id;
 
@@ -132,7 +136,7 @@ function TestSuiteTreeItem({ suite, level, selectedId, onSelect }: TestSuiteTree
         {/* 展開/折りたたみボタン */}
         {hasChildren ? (
           <button
-            onClick={() => setIsExpanded(!isExpanded)}
+            onClick={() => onToggleExpand(suite.id)}
             className="flex-shrink-0 w-6 h-6 flex items-center justify-center text-gray-500 hover:text-gray-700"
           >
             <svg
@@ -188,6 +192,8 @@ function TestSuiteTreeItem({ suite, level, selectedId, onSelect }: TestSuiteTree
               suite={childSuite}
               level={level + 1}
               selectedId={selectedId}
+              expandedIds={expandedIds}
+              onToggleExpand={onToggleExpand}
               onSelect={onSelect}
             />
           ))}
