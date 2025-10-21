@@ -80,6 +80,26 @@ impl SharedStepStep {
     pub fn set_parent(&mut self, parent_id: Option<i64>) {
         self.parent_step_id = parent_id;
     }
+
+    /// ハッシュを取得
+    pub fn hash(&self) -> &str {
+        &self.hash
+    }
+
+    /// 期待結果を取得
+    pub fn expected_result(&self) -> Option<&str> {
+        self.expected_result.as_deref()
+    }
+
+    /// データを取得
+    pub fn data(&self) -> Option<&str> {
+        self.data.as_deref()
+    }
+
+    /// 親ステップIDを取得
+    pub fn parent_step_id(&self) -> Option<i64> {
+        self.parent_step_id
+    }
 }
 
 /// 共有ステップ集約（集約ルート）
@@ -194,6 +214,38 @@ impl SharedStep {
     /// 同期メタデータを取得
     pub fn sync_metadata(&self) -> &SyncMetadata {
         &self.sync_metadata
+    }
+
+    /// 作成日時を取得
+    pub fn created_at(&self) -> DateTime<Utc> {
+        self.created_at
+    }
+
+    /// 更新日時を取得
+    pub fn updated_at(&self) -> DateTime<Utc> {
+        self.updated_at
+    }
+
+    /// Qase APIから取得したデータで共有ステップを構築
+    pub fn from_api(
+        id: SharedStepId,
+        project_code: ProjectCode,
+        title: String,
+        steps: Vec<SharedStepStep>,
+        cases_count: i32,
+        created_at: DateTime<Utc>,
+        updated_at: DateTime<Utc>,
+    ) -> Self {
+        Self {
+            id,
+            project_code,
+            title,
+            steps,
+            cases_count,
+            created_at,
+            updated_at,
+            sync_metadata: SyncMetadata::new(),
+        }
     }
 }
 

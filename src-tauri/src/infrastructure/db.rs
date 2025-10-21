@@ -4,10 +4,14 @@
 #![allow(dead_code)]
 
 // Repository実装の各モジュール
-mod project;
+mod project; // 古いdomain::modelsのProject用（Phase1互換）
+mod project_v2; // 新しいdomain::projectのProject用（DDD設計）
 mod shared_step;
+mod shared_step_v2; // 新しいdomain::shared_stepのSharedStep用（DDD設計）
 mod test_case;
+mod test_case_v2; // 新しいdomain::test_caseのTestCase用（DDD設計）
 mod test_suite;
+mod test_suite_v2; // 新しいdomain::test_suiteのTestSuite用（DDD設計）
 
 // CQRS Query側のRepository実装
 pub mod queries;
@@ -143,8 +147,6 @@ impl Database {
                 hash TEXT PRIMARY KEY,
                 project_code TEXT NOT NULL,
                 title TEXT NOT NULL,
-                action TEXT NOT NULL,
-                expected_result TEXT NOT NULL,
                 cases_count INTEGER NOT NULL DEFAULT 0,
                 created_at TEXT NOT NULL,
                 updated_at TEXT NOT NULL,
