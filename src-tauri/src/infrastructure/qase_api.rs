@@ -191,6 +191,22 @@ impl QaseClient {
         })
     }
 
+    /// テスト用: カスタムbase_urlでQaseClientを作成
+    ///
+    /// # Arguments
+    /// * `api_token` - Qase APIトークン
+    /// * `base_url` - カスタムbase URL（モックサーバー用）
+    ///
+    /// # Returns
+    /// QaseClientインスタンスまたはエラー
+    #[cfg(test)]
+    pub fn new_with_base_url(api_token: &str, base_url: &str) -> Result<Self> {
+        Ok(Self {
+            api_token: api_token.to_string(),
+            base_url: base_url.to_string(),
+        })
+    }
+
     /// 全プロジェクトを取得
     ///
     /// # Arguments
@@ -455,6 +471,8 @@ impl QaseClient {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use wiremock::matchers::{header, method, path};
+    use wiremock::{Mock, MockServer, ResponseTemplate};
 
     #[test]
     fn test_qase_client_initialization() {
@@ -467,79 +485,265 @@ mod tests {
 
     #[tokio::test]
     async fn test_get_projects() {
-        // get_projectsメソッドが正しく動作することをテスト
-        let api_token = "test_api_token";
-        let client = QaseClient::new(api_token).unwrap();
+        // Mockサーバーを起動
+        let mock_server = MockServer::start().await;
 
+        // Mockレスポンスを設定
+        Mock::given(method("GET"))
+            .and(path("/project"))
+            .and(header("Token", "test_token"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+                "status": true,
+                "result": {
+                    "total": 2,
+                    "filtered": 2,
+                    "count": 2,
+                    "entities": [
+                        {
+                            "code": "DEMO",
+                            "title": "Demo Project"
+                        },
+                        {
+                            "code": "TEST",
+                            "title": "Test Project"
+                        }
+                    ]
+                }
+            })))
+            .mount(&mock_server)
+            .await;
+
+        // Mockサーバーを使ってクライアントを作成
+        let client = QaseClient::new_with_base_url("test_token", &mock_server.uri()).unwrap();
         let result = client.get_projects(None, None).await;
 
-        // このテストは実際のAPIを呼び出すため、モック化が必要
-        // 今は基本的な動作確認のみ
-        assert!(result.is_err() || result.is_ok());
+        // 結果を検証
+        assert!(result.is_ok());
+        let response = result.unwrap();
+        assert!(response.status);
+        assert_eq!(response.result.total, 2);
+        assert_eq!(response.result.entities.len(), 2);
+        assert_eq!(response.result.entities[0].code, "DEMO");
+        assert_eq!(response.result.entities[0].title, "Demo Project");
     }
 
     #[tokio::test]
     async fn test_get_project() {
-        // get_projectメソッドが正しく動作することをテスト
-        let api_token = "test_api_token";
-        let client = QaseClient::new(api_token).unwrap();
+        // Mockサーバーを起動
+        let mock_server = MockServer::start().await;
 
+        // Mockレスポンスを設定
+        Mock::given(method("GET"))
+            .and(path("/project/DEMO"))
+            .and(header("Token", "test_token"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+                "status": true,
+                "result": {
+                    "code": "DEMO",
+                    "title": "Demo Project"
+                }
+            })))
+            .mount(&mock_server)
+            .await;
+
+        // Mockサーバーを使ってクライアントを作成
+        let client = QaseClient::new_with_base_url("test_token", &mock_server.uri()).unwrap();
         let result = client.get_project("DEMO").await;
 
-        // このテストは実際のAPIを呼び出すため、モック化が必要
-        // 今は基本的な動作確認のみ
-        assert!(result.is_err() || result.is_ok());
+        // 結果を検証
+        assert!(result.is_ok());
+        let response = result.unwrap();
+        assert!(response.status);
+        assert_eq!(response.result.code, "DEMO");
+        assert_eq!(response.result.title, "Demo Project");
     }
 
     #[tokio::test]
     async fn test_get_suites() {
-        // get_suitesメソッドが正しく動作することをテスト
-        let api_token = "test_api_token";
-        let client = QaseClient::new(api_token).unwrap();
+        // Mockサーバーを起動
+        let mock_server = MockServer::start().await;
 
+        // Mockレスポンスを設定
+        Mock::given(method("GET"))
+            .and(path("/suite/DEMO"))
+            .and(header("Token", "test_token"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+                "status": true,
+                "result": {
+                    "total": 1,
+                    "filtered": 1,
+                    "count": 1,
+                    "entities": [
+                        {
+                            "id": 1,
+                            "title": "Test Suite",
+                            "description": null,
+                            "preconditions": null,
+                            "position": 1,
+                            "cases_count": 5,
+                            "parent_id": null,
+                            "created_at": "2024-01-01T00:00:00Z",
+                            "updated_at": "2024-01-01T00:00:00Z"
+                        }
+                    ]
+                }
+            })))
+            .mount(&mock_server)
+            .await;
+
+        // Mockサーバーを使ってクライアントを作成
+        let client = QaseClient::new_with_base_url("test_token", &mock_server.uri()).unwrap();
         let result = client.get_suites("DEMO", None, None, None).await;
 
-        // このテストは実際のAPIを呼び出すため、モック化が必要
-        // 今は基本的な動作確認のみ
-        assert!(result.is_err() || result.is_ok());
+        // 結果を検証
+        assert!(result.is_ok());
+        let response = result.unwrap();
+        assert!(response.status);
+        assert_eq!(response.result.total, 1);
+        assert_eq!(response.result.entities[0].id, 1);
+        assert_eq!(response.result.entities[0].title, "Test Suite");
     }
 
     #[tokio::test]
     async fn test_get_suite() {
-        // get_suiteメソッドが正しく動作することをテスト
-        let api_token = "test_api_token";
-        let client = QaseClient::new(api_token).unwrap();
+        // Mockサーバーを起動
+        let mock_server = MockServer::start().await;
 
+        // Mockレスポンスを設定
+        Mock::given(method("GET"))
+            .and(path("/suite/DEMO/1"))
+            .and(header("Token", "test_token"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+                "status": true,
+                "result": {
+                    "id": 1,
+                    "title": "Test Suite",
+                    "description": null,
+                    "preconditions": null,
+                    "position": 1,
+                    "cases_count": 5,
+                    "parent_id": null,
+                    "created_at": "2024-01-01T00:00:00Z",
+                    "updated_at": "2024-01-01T00:00:00Z"
+                }
+            })))
+            .mount(&mock_server)
+            .await;
+
+        // Mockサーバーを使ってクライアントを作成
+        let client = QaseClient::new_with_base_url("test_token", &mock_server.uri()).unwrap();
         let result = client.get_suite("DEMO", 1).await;
 
-        // このテストは実際のAPIを呼び出すため、モック化が必要
-        // 今は基本的な動作確認のみ
-        assert!(result.is_err() || result.is_ok());
+        // 結果を検証
+        assert!(result.is_ok());
+        let response = result.unwrap();
+        assert!(response.status);
+        assert_eq!(response.result.id, 1);
+        assert_eq!(response.result.title, "Test Suite");
     }
 
     #[tokio::test]
     async fn test_get_cases() {
-        // get_casesメソッドが正しく動作することをテスト
-        let api_token = "test_api_token";
-        let client = QaseClient::new(api_token).unwrap();
+        // Mockサーバーを起動
+        let mock_server = MockServer::start().await;
 
+        // Mockレスポンスを設定
+        Mock::given(method("GET"))
+            .and(path("/case/DEMO"))
+            .and(header("Token", "test_token"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+                "status": true,
+                "result": {
+                    "total": 1,
+                    "filtered": 1,
+                    "count": 1,
+                    "entities": [
+                        {
+                            "id": 1,
+                            "position": 1,
+                            "title": "Test Case",
+                            "description": "Test Description",
+                            "preconditions": null,
+                            "postconditions": null,
+                            "severity": 1,
+                            "priority": 1,
+                            "type": 1,
+                            "layer": 1,
+                            "is_flaky": 0,
+                            "behavior": 1,
+                            "automation": 0,
+                            "status": 1,
+                            "suite_id": 1,
+                            "author_id": 1,
+                            "created_at": "2024-01-01T00:00:00Z",
+                            "updated_at": "2024-01-01T00:00:00Z"
+                        }
+                    ]
+                }
+            })))
+            .mount(&mock_server)
+            .await;
+
+        // Mockサーバーを使ってクライアントを作成
+        let client = QaseClient::new_with_base_url("test_token", &mock_server.uri()).unwrap();
         let result = client.get_cases("DEMO", None, None, None).await;
 
-        // このテストは実際のAPIを呼び出すため、モック化が必要
-        // 今は基本的な動作確認のみ
-        assert!(result.is_err() || result.is_ok());
+        // 結果を検証
+        if let Err(e) = &result {
+            eprintln!("Error: {:?}", e);
+        }
+        assert!(result.is_ok());
+        let response = result.unwrap();
+        assert!(response.status);
+        assert_eq!(response.result.total, 1);
+        assert_eq!(response.result.entities[0].id, 1);
+        assert_eq!(response.result.entities[0].title, "Test Case");
     }
 
     #[tokio::test]
     async fn test_get_case() {
-        // get_caseメソッドが正しく動作することをテスト
-        let api_token = "test_api_token";
-        let client = QaseClient::new(api_token).unwrap();
+        // Mockサーバーを起動
+        let mock_server = MockServer::start().await;
 
+        // Mockレスポンスを設定
+        Mock::given(method("GET"))
+            .and(path("/case/DEMO/1"))
+            .and(header("Token", "test_token"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+                "status": true,
+                "result": {
+                    "id": 1,
+                    "position": 1,
+                    "title": "Test Case",
+                    "description": "Test Description",
+                    "preconditions": null,
+                    "postconditions": null,
+                    "severity": 1,
+                    "priority": 1,
+                    "type": 1,
+                    "layer": 1,
+                    "is_flaky": 0,
+                    "behavior": 1,
+                    "automation": 0,
+                    "status": 1,
+                    "suite_id": 1,
+                    "author_id": 1,
+                    "created_at": "2024-01-01T00:00:00Z",
+                    "updated_at": "2024-01-01T00:00:00Z"
+                }
+            })))
+            .mount(&mock_server)
+            .await;
+
+        // Mockサーバーを使ってクライアントを作成
+        let client = QaseClient::new_with_base_url("test_token", &mock_server.uri()).unwrap();
         let result = client.get_case("DEMO", 1).await;
 
-        // このテストは実際のAPIを呼び出すため、モック化が必要
-        // 今は基本的な動作確認のみ
-        assert!(result.is_err() || result.is_ok());
+        // 結果を検証
+        assert!(result.is_ok());
+        let response = result.unwrap();
+        assert!(response.status);
+        assert_eq!(response.result.id, 1);
+        assert_eq!(response.result.title, "Test Case");
     }
 }
