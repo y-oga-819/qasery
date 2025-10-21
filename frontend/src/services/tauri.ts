@@ -141,3 +141,12 @@ export async function saveApiToken(token: string): Promise<void> {
 export async function getApiToken(): Promise<string | null> {
   return await invoke<string | null>('get_api_token');
 }
+
+/**
+ * APIトークンを削除
+ *
+ * @throws エラーメッセージ
+ */
+export async function deleteApiToken(): Promise<void> {
+  return await invoke<void>('delete_api_token');
+}

@@ -401,6 +401,18 @@ pub async fn save_api_token(state: State<'_, AppState>, token: String) -> Result
     state.set_api_token(token).map_err(|e| e.to_string())
 }
 
+/// APIトークンを削除
+///
+/// # Arguments
+/// * `state` - アプリケーション状態
+///
+/// # Returns
+/// 成功またはエラー
+#[tauri::command]
+pub async fn delete_api_token(state: State<'_, AppState>) -> Result<(), String> {
+    state.delete_api_token().map_err(|e| e.to_string())
+}
+
 /// APIトークンを取得
 ///
 /// # Arguments
