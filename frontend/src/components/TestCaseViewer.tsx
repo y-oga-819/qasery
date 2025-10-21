@@ -145,9 +145,16 @@ function TestCaseDetail() {
         </div>
         <div className="flex items-center gap-2">
           <button
-            onClick={() => {
+            onClick={async () => {
               const url = `https://app.qase.io/project/${selectedCase.project_code}?case=${selectedCase.id}`;
-              open(url);
+              console.log('Opening URL:', url);
+              try {
+                await open(url);
+                console.log('URL opened successfully');
+              } catch (error) {
+                console.error('Failed to open URL:', error);
+                alert(`Failed to open URL: ${error}`);
+              }
             }}
             title={`Qaseで開く: https://app.qase.io/project/${selectedCase.project_code}?case=${selectedCase.id}`}
             className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-blue-600 bg-white border border-blue-300 rounded-md hover:bg-blue-50 transition-colors"
