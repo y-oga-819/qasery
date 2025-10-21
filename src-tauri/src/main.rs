@@ -19,9 +19,10 @@ use presentation::commands::{
     get_suites_tree,
     list_projects,
     save_api_token,
+    sync_cases,
     sync_projects,
     sync_suites,
-    // Phase 2で実装中: sync_cases, sync_shared_steps, save_case
+    // Phase 2で実装中: sync_shared_steps, save_case
 };
 
 fn main() {
@@ -39,17 +40,18 @@ fn main() {
             get_suites_tree, // Query
             get_suite,       // Query
             sync_suites,     // Command
-            // テストケース関連コマンド（Query）
-            get_cases_by_suite,
-            get_case,
-            get_case_steps,
+            // テストケース関連コマンド
+            get_cases_by_suite, // Query
+            get_case,           // Query
+            get_case_steps,     // Query
+            sync_cases,         // Command
             // Shared Step関連コマンド（Query）
             get_shared_steps,
             get_shared_step,
             // API トークン関連コマンド
             save_api_token,
             get_api_token,
-            // Phase 2で実装中: sync_cases, sync_shared_steps, save_case
+            // Phase 2で実装中: sync_shared_steps, save_case
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

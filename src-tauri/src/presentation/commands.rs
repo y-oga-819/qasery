@@ -14,6 +14,8 @@ use crate::domain::queries::{
     TestCaseQueryRepository, TestCaseReadModel, TestCaseStepReadModel, TestSuiteQueryRepository,
     TestSuiteReadModel,
 };
+use crate::domain::test_case::repository::TestCaseRepository;
+use crate::domain::test_case::{OrderedStep, StepId, TestCase, TestCaseId};
 use crate::domain::test_suite::repository::TestSuiteRepository;
 use crate::domain::test_suite::{TestSuite, TestSuiteId};
 use chrono::DateTime;
@@ -275,12 +277,106 @@ pub async fn get_case_steps(
         .map_err(|e| e.to_string())
 }
 
-// TODO: Phase 2で再実装
-// /// Qaseからテストケースを同期
-// #[tauri::command]
-// pub async fn sync_cases(state: State<'_, AppState>, project_code: String) -> Result<usize, String> {
-//     todo!("Phase 2で実装")
-// }
+/// Qaseからテストケースを同期
+///
+/// # Arguments
+/// * `state` - アプリケーション状態
+/// * `project_code` - プロジェクトコード
+///
+/// # Returns
+/// 取り込んだテストケース数またはエラー
+#[tauri::command]
+pub async fn sync_cases(state: State<'_, AppState>, project_code: String) -> Result<usize, String> {
+    // QaseClientを取得
+    let client = state.get_qase_client().map_err(|e| e.to_string())?;
+
+    // ProjectCodeを作成（バリデーション）
+    let project_code_obj = ProjectCode::new(project_code.clone())
+        .map_err(|e| format!("Invalid project code: {:?}", e))?;
+
+    let mut count = 0;
+    let limit = 100;
+    let mut offset = 0;
+
+    loop {
+        // Qase APIからテストケース一覧を取得（ページング）
+        let response = client
+            .get_cases(&project_code, None, Some(limit), Some(offset))
+            .await
+            .map_err(|e| e.to_string())?;
+        let entities = response.result.entities;
+        let total = response.result.total;
+
+        // 各テストケースをDomain Modelに変換して保存
+        for entity in &entities {
+            // suite_idがない場合はスキップ（Qase APIでは必須ではない）
+            let suite_id = entity
+                .suite_id
+                .ok_or_else(|| format!("Test case {} has no suite_id", entity.id))?;
+
+            // 日時文字列をパース（ISO 8601形式）
+            let created_at = DateTime::parse_from_rfc3339(&entity.created_at)
+                .map_err(|e| format!("Failed to parse created_at: {}", e))?
+                .with_timezone(&chrono::Utc);
+            let updated_at = DateTime::parse_from_rfc3339(&entity.updated_at)
+                .map_err(|e| format!("Failed to parse updated_at: {}", e))?
+                .with_timezone(&chrono::Utc);
+
+            // ステップを変換
+            let steps = if let Some(api_steps) = &entity.steps {
+                api_steps
+                    .iter()
+                    .map(|step| {
+                        if let Some(shared_hash) = &step.shared_step_hash {
+                            // 共有ステップ
+                            OrderedStep::new_shared(shared_hash.clone(), step.position)
+                        } else {
+                            // 固有ステップ（仮のIDを生成）
+                            // 注意: Qase APIのstepには固有のIDがないため、positionベースで生成
+                            let step_id = StepId::new(entity.id * 10000 + step.position as i64);
+                            OrderedStep::new_own(step_id, step.position)
+                        }
+                    })
+                    .collect()
+            } else {
+                Vec::new()
+            };
+
+            // Domain Modelを作成
+            let test_case = TestCase::from_api(
+                TestCaseId::new(entity.id),
+                project_code_obj.clone(),
+                TestSuiteId::new(suite_id),
+                entity.title.clone(),
+                entity.description.clone(),
+                entity.preconditions.clone(),
+                entity.postconditions.clone(),
+                entity.severity,
+                entity.priority,
+                entity.case_type,
+                entity.status,
+                entity.automation,
+                Some(entity.author_id),
+                steps,
+                created_at,
+                updated_at,
+            );
+
+            // Repositoryで永続化（クリーンアーキテクチャに従う）
+            TestCaseRepository::save(&*state.db, &test_case).map_err(|e| e.to_string())?;
+
+            count += 1;
+        }
+
+        // 全件取得済みなら終了
+        if offset + entities.len() as i32 >= total {
+            break;
+        }
+        offset += limit;
+    }
+
+    Ok(count)
+}
 
 /// APIトークンを保存
 ///

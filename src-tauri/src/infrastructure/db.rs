@@ -8,6 +8,7 @@ mod project; // 古いdomain::modelsのProject用（Phase1互換）
 mod project_v2; // 新しいdomain::projectのProject用（DDD設計）
 mod shared_step;
 mod test_case;
+mod test_case_v2; // 新しいdomain::test_caseのTestCase用（DDD設計）
 mod test_suite;
 mod test_suite_v2; // 新しいdomain::test_suiteのTestSuite用（DDD設計）
 

@@ -152,6 +152,102 @@ impl TestCase {
     pub fn sync_metadata(&self) -> &SyncMetadata {
         &self.sync_metadata
     }
+
+    /// 説明を取得
+    pub fn description(&self) -> Option<&str> {
+        self.description.as_deref()
+    }
+
+    /// 前提条件を取得
+    pub fn preconditions(&self) -> Option<&str> {
+        self.preconditions.as_deref()
+    }
+
+    /// 事後条件を取得
+    pub fn postconditions(&self) -> Option<&str> {
+        self.postconditions.as_deref()
+    }
+
+    /// 重要度を取得
+    pub fn severity(&self) -> i32 {
+        self.severity
+    }
+
+    /// 優先度を取得
+    pub fn priority(&self) -> i32 {
+        self.priority
+    }
+
+    /// テストタイプを取得
+    pub fn test_type(&self) -> i32 {
+        self.test_type
+    }
+
+    /// ステータスを取得
+    pub fn status(&self) -> i32 {
+        self.status
+    }
+
+    /// 自動化レベルを取得
+    pub fn automation(&self) -> i32 {
+        self.automation
+    }
+
+    /// 作成者IDを取得
+    pub fn author_id(&self) -> Option<i64> {
+        self.author_id
+    }
+
+    /// 作成日時を取得
+    pub fn created_at(&self) -> DateTime<Utc> {
+        self.created_at
+    }
+
+    /// 更新日時を取得
+    pub fn updated_at(&self) -> DateTime<Utc> {
+        self.updated_at
+    }
+
+    /// Qase APIから取得したデータでテストケースを構築
+    #[allow(clippy::too_many_arguments)]
+    pub fn from_api(
+        id: TestCaseId,
+        project_code: ProjectCode,
+        suite_id: TestSuiteId,
+        title: String,
+        description: Option<String>,
+        preconditions: Option<String>,
+        postconditions: Option<String>,
+        severity: i32,
+        priority: i32,
+        test_type: i32,
+        status: i32,
+        automation: i32,
+        author_id: Option<i64>,
+        steps: Vec<OrderedStep>,
+        created_at: DateTime<Utc>,
+        updated_at: DateTime<Utc>,
+    ) -> Self {
+        Self {
+            id,
+            project_code,
+            suite_id,
+            title,
+            description,
+            preconditions,
+            postconditions,
+            severity,
+            priority,
+            test_type,
+            status,
+            automation,
+            author_id,
+            steps,
+            created_at,
+            updated_at,
+            sync_metadata: SyncMetadata::new(),
+        }
+    }
 }
 
 #[cfg(test)]
