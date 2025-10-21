@@ -150,14 +150,7 @@ function TestSuiteTreeItem({ suite, level, selectedId, onSelect }: TestSuiteTree
           </div>
         )}
 
-        {/* フォルダアイコン */}
-        <div className="flex-shrink-0 w-8 h-8 flex items-center justify-center">
-          <svg className="w-5 h-5 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
-            <path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" />
-          </svg>
-        </div>
-
-        {/* スイート情報（クリック可能） */}
+{/* スイート情報（クリック可能） */}
         <button
           onClick={() => onSelect(suite)}
           className="flex-1 text-left px-4 py-3 min-w-0"
