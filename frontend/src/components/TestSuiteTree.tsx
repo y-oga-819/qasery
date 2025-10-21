@@ -117,7 +117,7 @@ function TestSuiteTreeItem({ suite, level, selectedId, onSelect }: TestSuiteTree
         {/* スイートカード */}
         <div
           className={`
-            flex-1 flex items-center rounded-lg transition-colors
+            flex-1 flex items-center rounded-lg transition-colors relative
             ${
               isSelected
                 ? 'bg-blue-50 border-2 border-blue-500'
@@ -125,6 +125,10 @@ function TestSuiteTreeItem({ suite, level, selectedId, onSelect }: TestSuiteTree
             }
           `}
         >
+          {/* ルートスイートの左側アクセント */}
+          {level === 0 && (
+            <div className="absolute left-0 top-0 bottom-0 w-1 bg-blue-600 rounded-l-lg" />
+          )}
         {/* 展開/折りたたみボタン */}
         {hasChildren ? (
           <button
