@@ -129,7 +129,14 @@ function TestCaseDetail() {
     <div className="h-full flex flex-col">
       {/* 詳細ヘッダー */}
       <div className="p-4 border-b border-gray-200 flex items-center justify-between bg-gray-50">
-        <h3 className="text-lg font-semibold text-gray-900">{selectedCase.title}</h3>
+        <div>
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-sm font-mono text-gray-500">
+              {selectedCase.project_code}-{selectedCase.id}
+            </span>
+          </div>
+          <h3 className="text-lg font-semibold text-gray-900">{selectedCase.title}</h3>
+        </div>
         <Button onClick={() => selectCase(null)} variant="secondary" size="sm">
           一覧に戻る
         </Button>
