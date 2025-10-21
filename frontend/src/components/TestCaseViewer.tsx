@@ -1,6 +1,7 @@
 // テストケース表示・編集コンポーネント
 
 import { useEffect } from 'react';
+import { open } from '@tauri-apps/plugin-shell';
 import { useStore } from '../store';
 import { useTestCases } from '../hooks/useTestCases';
 import { useTestSteps } from '../hooks/useTestSteps';
@@ -143,10 +144,11 @@ function TestCaseDetail() {
           <h3 className="text-lg font-semibold text-gray-900">{selectedCase.title}</h3>
         </div>
         <div className="flex items-center gap-2">
-          <a
-            href={`https://app.qase.io/project/${selectedCase.project_code}?case=${selectedCase.id}`}
-            target="_blank"
-            rel="noopener noreferrer"
+          <button
+            onClick={() => {
+              const url = `https://app.qase.io/project/${selectedCase.project_code}?case=${selectedCase.id}`;
+              open(url);
+            }}
             title={`Qaseで開く: https://app.qase.io/project/${selectedCase.project_code}?case=${selectedCase.id}`}
             className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-blue-600 bg-white border border-blue-300 rounded-md hover:bg-blue-50 transition-colors"
           >
@@ -154,7 +156,7 @@ function TestCaseDetail() {
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
             </svg>
-          </a>
+          </button>
           <Button onClick={() => selectCase(null)} variant="secondary" size="sm">
             一覧に戻る
           </Button>
