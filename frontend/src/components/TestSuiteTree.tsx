@@ -99,17 +99,32 @@ function TestSuiteTreeItem({ suite, level, selectedId, onSelect }: TestSuiteTree
   return (
     <div>
       {/* スイート本体 */}
-      <div
-        className={`
-          flex items-center rounded-lg transition-colors
-          ${
-            isSelected
-              ? 'bg-blue-50 border-2 border-blue-500'
-              : 'bg-white border border-gray-200 hover:bg-gray-50'
-          }
-        `}
-        style={{ marginLeft: `${level * 20}px` }}
-      >
+      <div className="flex items-center">
+        {/* インデントガイドライン */}
+        {level > 0 && (
+          <div className="flex items-center" style={{ width: `${level * 24}px` }}>
+            {[...Array(level)].map((_, i) => (
+              <div
+                key={i}
+                className="w-6 h-full flex items-center justify-center"
+              >
+                <div className="w-px h-full bg-gray-300" />
+              </div>
+            ))}
+          </div>
+        )}
+        
+        {/* スイートカード */}
+        <div
+          className={`
+            flex-1 flex items-center rounded-lg transition-colors
+            ${
+              isSelected
+                ? 'bg-blue-50 border-2 border-blue-500'
+                : 'bg-white border border-gray-200 hover:bg-gray-50'
+            }
+          `}
+        >
         {/* 展開/折りたたみボタン */}
         {hasChildren ? (
           <button
@@ -126,8 +141,23 @@ function TestSuiteTreeItem({ suite, level, selectedId, onSelect }: TestSuiteTree
             </svg>
           </button>
         ) : (
-          <div className="w-8" />
+          <div className="w-8 flex items-center justify-center">
+            <div className="w-1 h-1 rounded-full bg-gray-400" />
+          </div>
         )}
+
+        {/* フォルダアイコン */}
+        <div className="flex-shrink-0 w-8 h-8 flex items-center justify-center">
+          {hasChildren ? (
+            <svg className="w-5 h-5 text-yellow-500" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" />
+            </svg>
+          ) : (
+            <svg className="w-5 h-5 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M4 4a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2V8a2 2 0 00-2-2h-5L9 4H4zm7 5a1 1 0 10-2 0v1H8a1 1 0 100 2h1v1a1 1 0 102 0v-1h1a1 1 0 100-2h-1V9z" clipRule="evenodd" />
+            </svg>
+          )}
+        </div>
 
         {/* スイート情報（クリック可能） */}
         <button
@@ -157,6 +187,7 @@ function TestSuiteTreeItem({ suite, level, selectedId, onSelect }: TestSuiteTree
             </div>
           </div>
         </button>
+        </div>
       </div>
 
       {/* 子スイート（再帰的に表示） */}
