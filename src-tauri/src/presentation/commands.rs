@@ -14,8 +14,9 @@ use crate::domain::queries::{
     TestCaseQueryRepository, TestCaseReadModel, TestCaseStepReadModel, TestSuiteQueryRepository,
     TestSuiteReadModel,
 };
-use crate::domain::shared_step::repository::SharedStepRepository;
-use crate::domain::shared_step::{SharedStep, SharedStepId, SharedStepStep};
+use crate::domain::models::SharedStep as ModelsSharedStep;
+use crate::domain::models::SharedStepStep as ModelsSharedStepStep;
+use crate::domain::repository::SharedStepRepository;
 use crate::domain::test_case::repository::TestCaseRepository;
 use crate::domain::test_case::{OrderedStep, StepId, TestCase, TestCaseId};
 use crate::domain::test_suite::repository::TestSuiteRepository;
@@ -526,13 +527,16 @@ pub async fn sync_shared_steps(
                     .map(|(idx, step)| {
                         // 内部ステップのIDを生成（hash値をベースに）
                         let step_id = idx as i64 + 1;
-                        SharedStepStep::new(
-                            step_id,
-                            step.hash.clone(),
-                            step.action.clone(),
-                            step.expected_result.clone(),
-                            idx as i32,
-                        )
+                        ModelsSharedStepStep {
+                            id: step_id,
+                            shared_step_hash: entity.hash.clone(),
+                            hash: step.hash.clone(),
+                            position: idx as i32,
+                            action: step.action.clone(),
+                            expected_result: step.expected_result.clone(),
+                            data: step.data.clone(),
+                            parent_step_id: None,
+                        }
                     })
                     .collect()
             } else {
@@ -541,25 +545,38 @@ pub async fn sync_shared_steps(
 
             // Domain Modelを作成
             let steps_count = steps.len();
-            let shared_step = SharedStep::from_api(
-                SharedStepId::new(entity.hash.clone()),
-                project_code_obj.clone(),
-                entity.title.clone(),
-                steps,
-                entity.cases_count,
+            let shared_step = ModelsSharedStep {
+                hash: entity.hash.clone(),
+                project_code: project_code_obj.value().to_string(),
+                title: entity.title.clone(),
+                cases_count: entity.cases_count,
                 created_at,
                 updated_at,
-            );
+                local_updated_at: created_at, // 初回同期時はcreated_atと同じ
+                remote_updated_at: Some(updated_at),
+                sync_status: crate::domain::models::SyncStatus::Clean,
+                is_deleted: false,
+            };
 
             // Repositoryで永続化（クリーンアーキテクチャに従う）
             println!(
                 "Saving shared step: hash={}, title={}, steps_count={}",
                 entity.hash, entity.title, steps_count
             );
+
+            // SharedStep本体を保存
             SharedStepRepository::save(&*state.db, &shared_step).map_err(|e| {
                 println!("Failed to save shared step {}: {}", entity.hash, e);
                 e.to_string()
             })?;
+
+            // SharedStepのステップを保存
+            if !steps.is_empty() {
+                SharedStepRepository::save_steps(&*state.db, &entity.hash, &steps).map_err(|e| {
+                    println!("Failed to save shared step steps {}: {}", entity.hash, e);
+                    e.to_string()
+                })?;
+            }
 
             count += 1;
         }
