@@ -1,0 +1,10 @@
+# 開発時の設定
+# macOSでの開発時にKeychainアクセスを求められる問題を回避
+
+[target.aarch64-apple-darwin]
+# 開発ビルド時はコード署名をスキップ
+rustflags = ["-C", "link-arg=-Wl,-adhoc_codesign"]
+
+[target.x86_64-apple-darwin]
+# 開発ビルド時はコード署名をスキップ
+rustflags = ["-C", "link-arg=-Wl,-adhoc_codesign"]
