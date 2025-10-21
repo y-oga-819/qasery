@@ -579,10 +579,7 @@ fn build_suite_tree(
     let mut children_map: HashMap<Option<i64>, Vec<TestSuiteReadModel>> = HashMap::new();
 
     for suite in suites.drain(..) {
-        children_map
-            .entry(suite.parent_id)
-            .or_default()
-            .push(suite);
+        children_map.entry(suite.parent_id).or_default().push(suite);
     }
 
     // 再帰的に階層構造を構築
