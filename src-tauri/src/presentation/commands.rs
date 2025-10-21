@@ -14,6 +14,8 @@ use crate::domain::queries::{
     TestCaseQueryRepository, TestCaseReadModel, TestCaseStepReadModel, TestSuiteQueryRepository,
     TestSuiteReadModel,
 };
+use crate::domain::shared_step::repository::SharedStepRepository;
+use crate::domain::shared_step::{SharedStep, SharedStepId, SharedStepStep};
 use crate::domain::test_case::repository::TestCaseRepository;
 use crate::domain::test_case::{OrderedStep, StepId, TestCase, TestCaseId};
 use crate::domain::test_suite::repository::TestSuiteRepository;
@@ -439,12 +441,93 @@ pub async fn get_shared_step(
     query_repo.get_by_hash(&hash).map_err(|e| e.to_string())
 }
 
-// TODO: Phase 2で再実装
-// /// QaseからShared Stepを同期
-// #[tauri::command]
-// pub async fn sync_shared_steps(
-//     state: State<'_, AppState>,
-//     project_code: String,
-// ) -> Result<usize, String> {
-//     todo!("Phase 2で実装")
-// }
+/// QaseからShared Stepを同期
+///
+/// # Arguments
+/// * `state` - アプリケーション状態
+/// * `project_code` - プロジェクトコード
+///
+/// # Returns
+/// 取り込んだShared Step数またはエラー
+#[tauri::command]
+pub async fn sync_shared_steps(
+    state: State<'_, AppState>,
+    project_code: String,
+) -> Result<usize, String> {
+    // QaseClientを取得
+    let client = state.get_qase_client().map_err(|e| e.to_string())?;
+
+    // ProjectCodeを作成（バリデーション）
+    let project_code_obj = ProjectCode::new(project_code.clone())
+        .map_err(|e| format!("Invalid project code: {:?}", e))?;
+
+    let mut count = 0;
+    let limit = 100;
+    let mut offset = 0;
+
+    loop {
+        // Qase APIからShared Step一覧を取得（ページング）
+        let response = client
+            .get_shared_steps(&project_code, None, Some(limit), Some(offset))
+            .await
+            .map_err(|e| e.to_string())?;
+        let entities = response.result.entities;
+        let total = response.result.total;
+
+        // 各Shared StepをDomain Modelに変換して保存
+        for entity in &entities {
+            // 日時文字列をパース（ISO 8601形式）
+            let created_at = DateTime::parse_from_rfc3339(&entity.created_at)
+                .map_err(|e| format!("Failed to parse created_at: {}", e))?
+                .with_timezone(&chrono::Utc);
+            let updated_at = DateTime::parse_from_rfc3339(&entity.updated_at)
+                .map_err(|e| format!("Failed to parse updated_at: {}", e))?
+                .with_timezone(&chrono::Utc);
+
+            // 内部ステップを変換
+            let steps = if let Some(api_steps) = &entity.steps {
+                api_steps
+                    .iter()
+                    .enumerate()
+                    .map(|(idx, step)| {
+                        // 内部ステップのIDを生成（hash値をベースに）
+                        let step_id = idx as i64 + 1;
+                        SharedStepStep::new(
+                            step_id,
+                            step.hash.clone(),
+                            step.action.clone(),
+                            step.expected_result.clone(),
+                            idx as i32,
+                        )
+                    })
+                    .collect()
+            } else {
+                Vec::new()
+            };
+
+            // Domain Modelを作成
+            let shared_step = SharedStep::from_api(
+                SharedStepId::new(entity.hash.clone()),
+                project_code_obj.clone(),
+                entity.title.clone(),
+                steps,
+                entity.cases_count,
+                created_at,
+                updated_at,
+            );
+
+            // Repositoryで永続化（クリーンアーキテクチャに従う）
+            SharedStepRepository::save(&*state.db, &shared_step).map_err(|e| e.to_string())?;
+
+            count += 1;
+        }
+
+        // 全件取得済みなら終了
+        if offset + entities.len() as i32 >= total {
+            break;
+        }
+        offset += limit;
+    }
+
+    Ok(count)
+}

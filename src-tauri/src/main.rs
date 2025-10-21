@@ -21,8 +21,9 @@ use presentation::commands::{
     save_api_token,
     sync_cases,
     sync_projects,
+    sync_shared_steps,
     sync_suites,
-    // Phase 2で実装中: sync_shared_steps, save_case
+    // Phase 2で実装中: save_case
 };
 
 fn main() {
@@ -45,13 +46,14 @@ fn main() {
             get_case,           // Query
             get_case_steps,     // Query
             sync_cases,         // Command
-            // Shared Step関連コマンド（Query）
-            get_shared_steps,
-            get_shared_step,
+            // Shared Step関連コマンド
+            get_shared_steps,  // Query
+            get_shared_step,   // Query
+            sync_shared_steps, // Command
             // API トークン関連コマンド
             save_api_token,
             get_api_token,
-            // Phase 2で実装中: sync_shared_steps, save_case
+            // Phase 2で実装中: save_case
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
