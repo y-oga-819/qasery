@@ -10,7 +10,11 @@ import type { TestSuite } from '../types';
  * テストスイートツリーコンポーネント
  */
 export function TestSuiteTree() {
-  const { selectedProject, selectedSuite, selectSuite, expandedSuiteIds, toggleSuiteExpanded } = useStore();
+  const selectedProject = useStore((state) => state.selectedProject);
+  const selectedSuite = useStore((state) => state.selectedSuite);
+  const selectSuite = useStore((state) => state.selectSuite);
+  const expandedSuiteIds = useStore((state) => state.expandedSuiteIds);
+  const toggleSuiteExpanded = useStore((state) => state.toggleSuiteExpanded);
   const { suites, loading, error } = useTestSuites(selectedProject?.code || null);
 
   // プロジェクトが変更されたら選択をクリア
