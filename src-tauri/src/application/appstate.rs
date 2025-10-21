@@ -6,6 +6,7 @@
 
 use crate::application::services::{ProjectService, TestCaseService, TestSuiteService};
 use crate::infrastructure::db::Database;
+use crate::infrastructure::keychain::KeychainService;
 use crate::infrastructure::qase_api::QaseClient;
 use anyhow::Result;
 use std::sync::{Arc, Mutex};
@@ -36,12 +37,15 @@ impl AppState {
         let test_suite_service = Arc::new(TestSuiteService::new(db.clone(), None));
         let test_case_service = Arc::new(TestCaseService::new(db.clone(), None));
 
+        // OSキーチェーンからAPI Tokenを読み込み
+        let stored_token = KeychainService::get_api_token().ok().flatten();
+
         Ok(Self {
             db,
             project_service,
             test_suite_service,
             test_case_service,
-            api_token: Arc::new(Mutex::new(None)),
+            api_token: Arc::new(Mutex::new(stored_token)),
         })
     }
 
@@ -53,13 +57,13 @@ impl AppState {
     /// # Returns
     /// 成功またはエラー
     pub fn set_api_token(&self, token: String) -> Result<()> {
-        // QaseClientを作成
-        let client = Arc::new(QaseClient::new(&token)?);
+        // QaseClientを作成して検証
+        let _client = Arc::new(QaseClient::new(&token)?);
 
-        // 各Serviceを新しいQaseClientで再作成
-        // 注: この実装では、Serviceの内部状態を変更できないため、
-        // Phase 1では簡易的にAPIトークンのみを保存し、
-        // 同期時にServiceが新しいClientを作成する方式を採用
+        // OSキーチェーンに保存
+        KeychainService::save_api_token(&token)?;
+
+        // メモリ上のトークンも更新
         let mut api_token = self
             .api_token
             .lock()
@@ -79,6 +83,24 @@ impl AppState {
             .lock()
             .map_err(|e| anyhow::anyhow!("Mutex lock failed: {}", e))?;
         Ok(api_token.clone())
+    }
+
+    /// API Tokenを削除
+    ///
+    /// # Returns
+    /// 成功またはエラー
+    pub fn delete_api_token(&self) -> Result<()> {
+        // OSキーチェーンから削除
+        KeychainService::delete_api_token()?;
+
+        // メモリ上のトークンもクリア
+        let mut api_token = self
+            .api_token
+            .lock()
+            .map_err(|e| anyhow::anyhow!("Mutex lock failed: {}", e))?;
+        *api_token = None;
+
+        Ok(())
     }
 
     /// QaseClientを取得（APIトークンが設定されている場合）

@@ -8,6 +8,7 @@ mod presentation;
 
 use application::appstate::AppState;
 use presentation::commands::{
+    delete_api_token,
     get_api_token,
     get_case,
     get_case_steps,
@@ -52,6 +53,7 @@ fn main() {
             sync_shared_steps, // Command
             // API トークン関連コマンド
             save_api_token,
+            delete_api_token,
             get_api_token,
             // Phase 2で実装中: save_case
         ])
