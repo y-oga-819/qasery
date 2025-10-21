@@ -13,8 +13,8 @@ use crate::domain::project::repository::ProjectRepository;
 use crate::domain::project::{Project, ProjectCode};
 use crate::domain::queries::{
     ProjectQueryRepository, ProjectReadModel, SharedStepQueryRepository, SharedStepReadModel,
-    TestCaseQueryRepository, TestCaseReadModel, TestCaseStepReadModel, TestSuiteQueryRepository,
-    TestSuiteReadModel,
+    SharedStepStepReadModel, TestCaseQueryRepository, TestCaseReadModel, TestCaseStepReadModel,
+    TestSuiteQueryRepository, TestSuiteReadModel,
 };
 use crate::domain::repository::SharedStepRepository;
 use crate::domain::test_case::repository::TestCaseRepository;
@@ -460,6 +460,25 @@ pub async fn get_shared_step(
 ) -> Result<Option<SharedStepReadModel>, String> {
     let query_repo = &*state.db as &dyn SharedStepQueryRepository;
     query_repo.get_by_hash(&hash).map_err(|e| e.to_string())
+}
+
+/// Shared Stepのステップ一覧を取得
+///
+/// # Arguments
+/// * `state` - アプリケーション状態
+/// * `shared_step_hash` - Shared StepハッシュID
+///
+/// # Returns
+/// ステップ一覧またはエラー
+#[tauri::command]
+pub async fn get_shared_step_steps(
+    state: State<'_, AppState>,
+    shared_step_hash: String,
+) -> Result<Vec<SharedStepStepReadModel>, String> {
+    let query_repo = &*state.db as &dyn SharedStepQueryRepository;
+    query_repo
+        .get_steps(&shared_step_hash)
+        .map_err(|e| e.to_string())
 }
 
 /// QaseからShared Stepを同期

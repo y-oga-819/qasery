@@ -150,3 +150,14 @@ export async function getApiToken(): Promise<string | null> {
 export async function deleteApiToken(): Promise<void> {
   return await invoke<void>('delete_api_token');
 }
+
+/**
+ * Shared Stepのステップ一覧を取得
+ *
+ * @param sharedStepHash Shared StepハッシュID
+ * @returns ステップ一覧
+ * @throws エラーメッセージ
+ */
+export async function getSharedStepSteps(sharedStepHash: string): Promise<import('../types').SharedStepStep[]> {
+  return await invoke<import('../types').SharedStepStep[]>('get_shared_step_steps', { sharedStepHash });
+}

@@ -15,6 +15,7 @@ use presentation::commands::{
     get_cases_by_suite,
     get_project,
     get_shared_step,
+    get_shared_step_steps,
     get_shared_steps,
     get_suite,
     get_suites_tree,
@@ -48,9 +49,10 @@ fn main() {
             get_case_steps,     // Query
             sync_cases,         // Command
             // Shared Step関連コマンド
-            get_shared_steps,  // Query
-            get_shared_step,   // Query
-            sync_shared_steps, // Command
+            get_shared_steps,      // Query
+            get_shared_step,       // Query
+            get_shared_step_steps, // Query
+            sync_shared_steps,     // Command
             // API トークン関連コマンド
             save_api_token,
             delete_api_token,
