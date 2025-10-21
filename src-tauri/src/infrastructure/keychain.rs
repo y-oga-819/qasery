@@ -24,8 +24,8 @@ impl KeychainService {
     /// # Returns
     /// 成功またはエラー
     pub fn save_api_token(token: &str) -> Result<()> {
-        let entry = Entry::new(SERVICE_NAME, API_TOKEN_KEY)
-            .context("Failed to create keychain entry")?;
+        let entry =
+            Entry::new(SERVICE_NAME, API_TOKEN_KEY).context("Failed to create keychain entry")?;
 
         entry
             .set_password(token)
@@ -39,8 +39,8 @@ impl KeychainService {
     /// # Returns
     /// API TokenまたはNone（未設定の場合）
     pub fn get_api_token() -> Result<Option<String>> {
-        let entry = Entry::new(SERVICE_NAME, API_TOKEN_KEY)
-            .context("Failed to create keychain entry")?;
+        let entry =
+            Entry::new(SERVICE_NAME, API_TOKEN_KEY).context("Failed to create keychain entry")?;
 
         match entry.get_password() {
             Ok(token) => Ok(Some(token)),
@@ -54,8 +54,8 @@ impl KeychainService {
     /// # Returns
     /// 成功またはエラー
     pub fn delete_api_token() -> Result<()> {
-        let entry = Entry::new(SERVICE_NAME, API_TOKEN_KEY)
-            .context("Failed to create keychain entry")?;
+        let entry =
+            Entry::new(SERVICE_NAME, API_TOKEN_KEY).context("Failed to create keychain entry")?;
 
         match entry.delete_password() {
             Ok(()) => Ok(()),
@@ -74,8 +74,8 @@ impl KeychainService {
     /// 成功またはエラー
     #[cfg(test)]
     fn delete_api_token_internal(service_name: &str, key_name: &str) -> Result<()> {
-        let entry = Entry::new(service_name, key_name)
-            .context("Failed to create keychain entry")?;
+        let entry =
+            Entry::new(service_name, key_name).context("Failed to create keychain entry")?;
 
         match entry.delete_password() {
             Ok(()) => Ok(()),
@@ -169,7 +169,7 @@ mod tests {
 
         // macOS Keychainでは既存エントリの更新前に削除が必要
         entry.delete_password().unwrap();
-        
+
         // 新しいトークンを保存
         entry.set_password("new_token").unwrap();
 

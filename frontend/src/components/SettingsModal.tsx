@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Modal, Button, ErrorMessage } from './common';
-import { saveApiToken, getApiToken } from '../services/tauri';
+import { saveApiToken, getApiToken, deleteApiToken } from '../services/tauri';
 
 /**
  * 設定モーダルのプロパティ
@@ -74,6 +74,31 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
   };
 
   /**
+   * APIトークンを削除
+   */
+  const handleDelete = async () => {
+    if (!confirm('APIトークンを削除してもよろしいですか？')) {
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError(null);
+      setSuccess(false);
+      await deleteApiToken();
+      setApiToken('');
+      setSuccess(true);
+      setTimeout(() => {
+        onClose();
+      }, 1500);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'APIトークンの削除に失敗しました');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  /**
    * モーダルを閉じる
    */
   const handleClose = () => {
@@ -130,13 +155,27 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
         )}
 
         {/* ボタン */}
-        <div className="flex justify-end gap-2 pt-4">
-          <Button variant="secondary" onClick={handleClose} disabled={loading}>
-            キャンセル
-          </Button>
-          <Button onClick={handleSave} loading={loading} disabled={loading}>
-            保存
-          </Button>
+        <div className="flex justify-between pt-4">
+          <div>
+            {apiToken && (
+              <Button
+                variant="secondary"
+                onClick={handleDelete}
+                disabled={loading}
+                className="text-red-600 hover:text-red-700 hover:bg-red-50"
+              >
+                削除
+              </Button>
+            )}
+          </div>
+          <div className="flex gap-2">
+            <Button variant="secondary" onClick={handleClose} disabled={loading}>
+              キャンセル
+            </Button>
+            <Button onClick={handleSave} loading={loading} disabled={loading}>
+              保存
+            </Button>
+          </div>
         </div>
       </div>
     </Modal>
