@@ -3,6 +3,19 @@
 import { useEffect } from 'react';
 import { open } from '@tauri-apps/plugin-shell';
 import DOMPurify from 'dompurify';
+
+/**
+ * テキストをHTMLとして安全に表示するための変換
+ * 改行(
+)を<br>に変換してからサニタイズ
+ */
+const sanitizeWithLineBreaks = (text: string): string => {
+  // 改行を<br>に変換
+  const withBreaks = text.replace(/
+/g, '<br>');
+  // サニタイズ
+  return DOMPurify.sanitize(withBreaks);
+};
 import { useStore } from '../store';
 import { useTestCases } from '../hooks/useTestCases';
 import { useTestSteps } from '../hooks/useTestSteps';
@@ -179,7 +192,7 @@ function TestCaseDetail() {
             <h4 className="text-sm font-semibold text-gray-700 mb-2">説明</h4>
             <div 
               className="text-gray-800 prose prose-sm max-w-none"
-              dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(selectedCase.description) }}
+              dangerouslySetInnerHTML={{ __html: sanitizeWithLineBreaks(selectedCase.description) }}
             />
           </div>
         )}
@@ -190,7 +203,7 @@ function TestCaseDetail() {
             <h4 className="text-sm font-semibold text-gray-700 mb-2">事前条件</h4>
             <div 
               className="text-gray-800 prose prose-sm max-w-none"
-              dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(selectedCase.preconditions) }}
+              dangerouslySetInnerHTML={{ __html: sanitizeWithLineBreaks(selectedCase.preconditions) }}
             />
           </div>
         )}
@@ -201,7 +214,7 @@ function TestCaseDetail() {
             <h4 className="text-sm font-semibold text-gray-700 mb-2">事後条件</h4>
             <div 
               className="text-gray-800 prose prose-sm max-w-none"
-              dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(selectedCase.postconditions) }}
+              dangerouslySetInnerHTML={{ __html: sanitizeWithLineBreaks(selectedCase.postconditions) }}
             />
           </div>
         )}
@@ -427,14 +440,14 @@ function StepItem({ step, level }: StepItemProps) {
           <div className="flex-1 min-w-0">
             <div 
               className="text-sm font-medium text-gray-900 mb-1 prose prose-sm max-w-none"
-              dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(step.action || 'アクション') }}
+              dangerouslySetInnerHTML={{ __html: sanitizeWithLineBreaks(step.action || 'アクション') }}
             />
             {step.expected_result && (
               <div className="text-sm text-gray-600 mt-2">
                 <span className="font-medium text-gray-700">期待結果: </span>
                 <div 
                   className="prose prose-sm max-w-none mt-1"
-                  dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(step.expected_result) }}
+                  dangerouslySetInnerHTML={{ __html: sanitizeWithLineBreaks(step.expected_result) }}
                 />
               </div>
             )}
@@ -443,7 +456,7 @@ function StepItem({ step, level }: StepItemProps) {
                 <span className="font-medium">データ: </span>
                 <div 
                   className="prose prose-xs max-w-none mt-1"
-                  dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(step.data) }}
+                  dangerouslySetInnerHTML={{ __html: sanitizeWithLineBreaks(step.data) }}
                 />
               </div>
             )}
