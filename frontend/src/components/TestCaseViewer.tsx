@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import { open } from '@tauri-apps/plugin-shell';
+import DOMPurify from 'dompurify';
 import { useStore } from '../store';
 import { useTestCases } from '../hooks/useTestCases';
 import { useTestSteps } from '../hooks/useTestSteps';
@@ -176,7 +177,10 @@ function TestCaseDetail() {
         {selectedCase.description && (
           <div>
             <h4 className="text-sm font-semibold text-gray-700 mb-2">説明</h4>
-            <p className="text-gray-800 whitespace-pre-wrap">{selectedCase.description}</p>
+            <div 
+              className="text-gray-800 prose prose-sm max-w-none"
+              dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(selectedCase.description) }}
+            />
           </div>
         )}
 
@@ -184,7 +188,10 @@ function TestCaseDetail() {
         {selectedCase.preconditions && (
           <div>
             <h4 className="text-sm font-semibold text-gray-700 mb-2">事前条件</h4>
-            <p className="text-gray-800 whitespace-pre-wrap">{selectedCase.preconditions}</p>
+            <div 
+              className="text-gray-800 prose prose-sm max-w-none"
+              dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(selectedCase.preconditions) }}
+            />
           </div>
         )}
 
@@ -192,7 +199,10 @@ function TestCaseDetail() {
         {selectedCase.postconditions && (
           <div>
             <h4 className="text-sm font-semibold text-gray-700 mb-2">事後条件</h4>
-            <p className="text-gray-800 whitespace-pre-wrap">{selectedCase.postconditions}</p>
+            <div 
+              className="text-gray-800 prose prose-sm max-w-none"
+              dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(selectedCase.postconditions) }}
+            />
           </div>
         )}
 
@@ -415,20 +425,21 @@ function StepItem({ step, level }: StepItemProps) {
             {step.position}
           </span>
           <div className="flex-1 min-w-0">
-            <h5 className="text-sm font-medium text-gray-900 mb-1">
-              {step.action || 'アクション'}
-            </h5>
+            <h5 
+              className="text-sm font-medium text-gray-900 mb-1"
+              dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(step.action || 'アクション') }}
+            />
             {step.expected_result && (
-              <p className="text-sm text-gray-600 m-0 leading-normal">
+              <div className="text-sm text-gray-600 m-0 leading-normal">
                 <span className="font-medium text-gray-700">期待結果: </span>
-                {step.expected_result}
-              </p>
+                <span dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(step.expected_result) }} />
+              </div>
             )}
             {step.data && (
-              <p className="text-xs text-gray-500 mt-1 m-0 leading-normal">
+              <div className="text-xs text-gray-500 mt-1 m-0 leading-normal">
                 <span className="font-medium">データ: </span>
-                {step.data}
-              </p>
+                <span dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(step.data) }} />
+              </div>
             )}
           </div>
         </div>
