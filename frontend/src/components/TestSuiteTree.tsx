@@ -1,6 +1,6 @@
 // テストスイートツリーコンポーネント
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useStore } from '../store';
 import { useTestSuites } from '../hooks/useTestSuites';
 import { Spinner, ErrorMessage } from './common';
