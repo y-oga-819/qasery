@@ -10,10 +10,7 @@ import DOMPurify from 'dompurify';
 )を<br>に変換してからサニタイズ
  */
 const sanitizeWithLineBreaks = (text: string): string => {
-  // 改行を<br>に変換
-  const withBreaks = text.replace(/
-/g, '<br>');
-  // サニタイズ
+  const withBreaks = text.replace(/\n/g, '<br>');
   return DOMPurify.sanitize(withBreaks);
 };
 import { useStore } from '../store';
