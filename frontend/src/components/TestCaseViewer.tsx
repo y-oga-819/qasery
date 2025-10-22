@@ -425,20 +425,26 @@ function StepItem({ step, level }: StepItemProps) {
             {step.position}
           </span>
           <div className="flex-1 min-w-0">
-            <h5 
-              className="text-sm font-medium text-gray-900 mb-1"
+            <div 
+              className="text-sm font-medium text-gray-900 mb-1 prose prose-sm max-w-none"
               dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(step.action || 'アクション') }}
             />
             {step.expected_result && (
-              <div className="text-sm text-gray-600 m-0 leading-normal">
+              <div className="text-sm text-gray-600 mt-2">
                 <span className="font-medium text-gray-700">期待結果: </span>
-                <span dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(step.expected_result) }} />
+                <div 
+                  className="prose prose-sm max-w-none mt-1"
+                  dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(step.expected_result) }}
+                />
               </div>
             )}
             {step.data && (
-              <div className="text-xs text-gray-500 mt-1 m-0 leading-normal">
+              <div className="text-xs text-gray-500 mt-2">
                 <span className="font-medium">データ: </span>
-                <span dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(step.data) }} />
+                <div 
+                  className="prose prose-xs max-w-none mt-1"
+                  dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(step.data) }}
+                />
               </div>
             )}
           </div>
