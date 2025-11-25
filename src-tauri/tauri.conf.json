@@ -1,7 +1,7 @@
 {
   "productName": "Qasery",
   "version": "0.1.0",
-  "identifier": "com.qasery.app",
+  "identifier": "com.qasery.desktop",
   "build": {
     "beforeDevCommand": "npm run dev:frontend",
     "beforeBuildCommand": "npm run build:frontend",
