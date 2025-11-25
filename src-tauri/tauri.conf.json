@@ -1,7 +1,7 @@
 {
   "productName": "Qasery",
   "version": "0.1.0",
-  "identifier": "com.qasery.app",
+  "identifier": "com.qasery.desktop",
   "build": {
     "beforeDevCommand": "npm run dev:frontend",
     "beforeBuildCommand": "npm run build:frontend",
@@ -9,8 +9,15 @@
     "frontendDist": "../frontend/dist"
   },
   "bundle": {
-    "active": false,
-    "targets": "all"
+    "active": true,
+    "targets": "all",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ]
   },
   "app": {
     "withGlobalTauri": true,
