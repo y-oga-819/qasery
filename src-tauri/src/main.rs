@@ -7,7 +7,6 @@ mod infrastructure;
 mod presentation;
 
 use application::appstate::AppState;
-use tauri::Manager;
 use presentation::commands::{
     delete_api_token,
     get_api_token,
@@ -28,6 +27,7 @@ use presentation::commands::{
     sync_suites,
     // Phase 2で実装中: save_case
 };
+use tauri::Manager;
 
 fn main() {
     tauri::Builder::default()
