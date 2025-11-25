@@ -7,6 +7,7 @@ mod infrastructure;
 mod presentation;
 
 use application::appstate::AppState;
+use tauri::Manager;
 use presentation::commands::{
     delete_api_token,
     get_api_token,
