@@ -1,6 +1,18 @@
 // テストケース表示・編集コンポーネント
 
 import { useEffect } from 'react';
+import { open } from '@tauri-apps/plugin-shell';
+import DOMPurify from 'dompurify';
+
+/**
+ * テキストをHTMLとして安全に表示するための変換
+ * 改行(
+)を<br>に変換してからサニタイズ
+ */
+const sanitizeWithLineBreaks = (text: string): string => {
+  const withBreaks = text.replace(/\n/g, '<br>');
+  return DOMPurify.sanitize(withBreaks);
+};
 import { useStore } from '../store';
 import { useTestCases } from '../hooks/useTestCases';
 import { useTestSteps } from '../hooks/useTestSteps';
@@ -96,6 +108,11 @@ function TestCaseList({ cases, onSelect }: TestCaseListProps) {
         >
           <div className="flex items-start justify-between">
             <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-xs font-mono text-gray-500">
+                  {testCase.project_code}-{testCase.id}
+                </span>
+              </div>
               <h3 className="font-medium text-gray-900 truncate">{testCase.title}</h3>
               {testCase.description && (
                 <p className="text-sm text-gray-600 mt-1 line-clamp-2">{testCase.description}</p>
@@ -129,10 +146,39 @@ function TestCaseDetail() {
     <div className="h-full flex flex-col">
       {/* 詳細ヘッダー */}
       <div className="p-4 border-b border-gray-200 flex items-center justify-between bg-gray-50">
-        <h3 className="text-lg font-semibold text-gray-900">{selectedCase.title}</h3>
-        <Button onClick={() => selectCase(null)} variant="secondary" size="sm">
-          一覧に戻る
-        </Button>
+        <div>
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-sm font-mono text-gray-500">
+              {selectedCase.project_code}-{selectedCase.id}
+            </span>
+          </div>
+          <h3 className="text-lg font-semibold text-gray-900">{selectedCase.title}</h3>
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={async () => {
+              const url = `https://app.qase.io/project/${selectedCase.project_code}?case=${selectedCase.id}`;
+              console.log('Opening URL:', url);
+              try {
+                await open(url);
+                console.log('URL opened successfully');
+              } catch (error) {
+                console.error('Failed to open URL:', error);
+                alert(`Failed to open URL: ${error}`);
+              }
+            }}
+            title={`Qaseで開く: https://app.qase.io/project/${selectedCase.project_code}?case=${selectedCase.id}`}
+            className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-blue-600 bg-white border border-blue-300 rounded-md hover:bg-blue-50 transition-colors"
+          >
+            <span>Qaseで開く</span>
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+            </svg>
+          </button>
+          <Button onClick={() => selectCase(null)} variant="secondary" size="sm">
+            一覧に戻る
+          </Button>
+        </div>
       </div>
 
       {/* 詳細内容 */}
@@ -141,7 +187,10 @@ function TestCaseDetail() {
         {selectedCase.description && (
           <div>
             <h4 className="text-sm font-semibold text-gray-700 mb-2">説明</h4>
-            <p className="text-gray-800 whitespace-pre-wrap">{selectedCase.description}</p>
+            <div 
+              className="text-gray-800 prose prose-sm max-w-none"
+              dangerouslySetInnerHTML={{ __html: sanitizeWithLineBreaks(selectedCase.description) }}
+            />
           </div>
         )}
 
@@ -149,7 +198,10 @@ function TestCaseDetail() {
         {selectedCase.preconditions && (
           <div>
             <h4 className="text-sm font-semibold text-gray-700 mb-2">事前条件</h4>
-            <p className="text-gray-800 whitespace-pre-wrap">{selectedCase.preconditions}</p>
+            <div 
+              className="text-gray-800 prose prose-sm max-w-none"
+              dangerouslySetInnerHTML={{ __html: sanitizeWithLineBreaks(selectedCase.preconditions) }}
+            />
           </div>
         )}
 
@@ -157,7 +209,10 @@ function TestCaseDetail() {
         {selectedCase.postconditions && (
           <div>
             <h4 className="text-sm font-semibold text-gray-700 mb-2">事後条件</h4>
-            <p className="text-gray-800 whitespace-pre-wrap">{selectedCase.postconditions}</p>
+            <div 
+              className="text-gray-800 prose prose-sm max-w-none"
+              dangerouslySetInnerHTML={{ __html: sanitizeWithLineBreaks(selectedCase.postconditions) }}
+            />
           </div>
         )}
 
@@ -380,20 +435,27 @@ function StepItem({ step, level }: StepItemProps) {
             {step.position}
           </span>
           <div className="flex-1 min-w-0">
-            <h5 className="text-sm font-medium text-gray-900 mb-1">
-              {step.action || 'アクション'}
-            </h5>
+            <div 
+              className="text-sm font-medium text-gray-900 mb-1 prose prose-sm max-w-none"
+              dangerouslySetInnerHTML={{ __html: sanitizeWithLineBreaks(step.action || 'アクション') }}
+            />
             {step.expected_result && (
-              <p className="text-sm text-gray-600">
+              <div className="text-sm text-gray-600 mt-2">
                 <span className="font-medium text-gray-700">期待結果: </span>
-                {step.expected_result}
-              </p>
+                <div 
+                  className="prose prose-sm max-w-none mt-1"
+                  dangerouslySetInnerHTML={{ __html: sanitizeWithLineBreaks(step.expected_result) }}
+                />
+              </div>
             )}
             {step.data && (
-              <p className="text-xs text-gray-500 mt-1">
+              <div className="text-xs text-gray-500 mt-2">
                 <span className="font-medium">データ: </span>
-                {step.data}
-              </p>
+                <div 
+                  className="prose prose-xs max-w-none mt-1"
+                  dangerouslySetInnerHTML={{ __html: sanitizeWithLineBreaks(step.data) }}
+                />
+              </div>
             )}
           </div>
         </div>

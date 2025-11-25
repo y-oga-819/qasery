@@ -26,10 +26,14 @@ interface TestSuiteState {
   suites: TestSuite[];
   /** 選択中のテストスイート */
   selectedSuite: TestSuite | null;
+  /** 展開されているスイートのIDセット */
+  expandedSuiteIds: Set<number>;
   /** テストスイート一覧を設定 */
   setSuites: (suites: TestSuite[]) => void;
   /** テストスイートを選択 */
   selectSuite: (suite: TestSuite | null) => void;
+  /** スイートの展開状態をトグル */
+  toggleSuiteExpanded: (suiteId: number) => void;
 }
 
 /**
@@ -80,8 +84,33 @@ export const useStore = create<AppState>((set) => ({
   // テストスイート関連
   suites: [],
   selectedSuite: null,
-  setSuites: (suites) => set({ suites }),
+  expandedSuiteIds: new Set(),
+  setSuites: (suites) => {
+    // すべてのスイートIDを収集（再帰的に）
+    const collectAllIds = (suites: TestSuite[]): number[] => {
+      const ids: number[] = [];
+      suites.forEach((suite: any) => {
+        ids.push(suite.id);
+        if (suite.children && suite.children.length > 0) {
+          ids.push(...collectAllIds(suite.children));
+        }
+      });
+      return ids;
+    };
+    const allIds = collectAllIds(suites);
+    set({ suites, expandedSuiteIds: new Set(allIds) });
+  },
   selectSuite: (suite) => set({ selectedSuite: suite }),
+  toggleSuiteExpanded: (suiteId) =>
+    set((state) => {
+      const newSet = new Set(state.expandedSuiteIds);
+      if (newSet.has(suiteId)) {
+        newSet.delete(suiteId);
+      } else {
+        newSet.add(suiteId);
+      }
+      return { expandedSuiteIds: newSet };
+    }),
 
   // テストケース関連
   cases: [],

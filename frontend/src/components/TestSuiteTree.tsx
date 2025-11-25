@@ -1,6 +1,6 @@
 // テストスイートツリーコンポーネント
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useStore } from '../store';
 import { useTestSuites } from '../hooks/useTestSuites';
 import { Spinner, ErrorMessage } from './common';
@@ -10,7 +10,11 @@ import type { TestSuite } from '../types';
  * テストスイートツリーコンポーネント
  */
 export function TestSuiteTree() {
-  const { selectedProject, selectedSuite, selectSuite } = useStore();
+  const selectedProject = useStore((state) => state.selectedProject);
+  const selectedSuite = useStore((state) => state.selectedSuite);
+  const selectSuite = useStore((state) => state.selectSuite);
+  const expandedSuiteIds = useStore((state) => state.expandedSuiteIds);
+  const toggleSuiteExpanded = useStore((state) => state.toggleSuiteExpanded);
   const { suites, loading, error } = useTestSuites(selectedProject?.code || null);
 
   // プロジェクトが変更されたら選択をクリア
@@ -71,6 +75,8 @@ export function TestSuiteTree() {
                 suite={suite}
                 level={0}
                 selectedId={selectedSuite?.id || null}
+                expandedIds={expandedSuiteIds}
+                onToggleExpand={toggleSuiteExpanded}
                 onSelect={handleSuiteClick}
               />
             ))}
@@ -88,33 +94,54 @@ interface TestSuiteTreeItemProps {
   suite: TestSuite & { children?: TestSuite[] };
   level: number;
   selectedId: number | null;
+  expandedIds: Set<number>;
+  onToggleExpand: (suiteId: number) => void;
   onSelect: (suite: TestSuite) => void;
 }
 
-function TestSuiteTreeItem({ suite, level, selectedId, onSelect }: TestSuiteTreeItemProps) {
-  const [isExpanded, setIsExpanded] = useState(true);
+function TestSuiteTreeItem({ suite, level, selectedId, expandedIds, onToggleExpand, onSelect }: TestSuiteTreeItemProps) {
+  const isExpanded = expandedIds.has(suite.id) || level === 0; // デフォルトでルートは展開
   const hasChildren = suite.children && suite.children.length > 0;
   const isSelected = selectedId === suite.id;
 
   return (
     <div>
       {/* スイート本体 */}
-      <div
-        className={`
-          flex items-center rounded-lg transition-colors
-          ${
-            isSelected
-              ? 'bg-blue-50 border-2 border-blue-500'
-              : 'bg-white border border-gray-200 hover:bg-gray-50'
-          }
-        `}
-        style={{ marginLeft: `${level * 20}px` }}
-      >
+      <div className="flex items-center">
+        {/* インデントガイドライン */}
+        {level > 0 && (
+          <div className="flex items-center" style={{ width: `${level * 24}px` }}>
+            {[...Array(level)].map((_, i) => (
+              <div
+                key={i}
+                className="w-6 h-full flex items-center justify-center"
+              >
+                <div className="w-px h-full bg-gray-300" />
+              </div>
+            ))}
+          </div>
+        )}
+        
+        {/* スイートカード */}
+        <div
+          className={`
+            flex-1 flex items-center rounded-lg transition-colors relative
+            ${
+              isSelected
+                ? 'bg-blue-50 border-2 border-blue-500'
+                : 'bg-white border border-gray-200 hover:bg-gray-50'
+            }
+          `}
+        >
+          {/* ルートスイートの左側アクセント */}
+          {level === 0 && (
+            <div className="absolute left-0 top-0 bottom-0 w-1 bg-blue-600 rounded-l-lg" />
+          )}
         {/* 展開/折りたたみボタン */}
         {hasChildren ? (
           <button
-            onClick={() => setIsExpanded(!isExpanded)}
-            className="flex-shrink-0 w-8 h-8 flex items-center justify-center text-gray-500 hover:text-gray-700"
+            onClick={() => onToggleExpand(suite.id)}
+            className="flex-shrink-0 w-6 h-6 flex items-center justify-center text-gray-500 hover:text-gray-700"
           >
             <svg
               className={`w-4 h-4 transition-transform ${isExpanded ? 'rotate-90' : ''}`}
@@ -126,10 +153,10 @@ function TestSuiteTreeItem({ suite, level, selectedId, onSelect }: TestSuiteTree
             </svg>
           </button>
         ) : (
-          <div className="w-8" />
+          <div className="w-6" />
         )}
 
-        {/* スイート情報（クリック可能） */}
+{/* スイート情報（クリック可能） */}
         <button
           onClick={() => onSelect(suite)}
           className="flex-1 text-left px-4 py-3 min-w-0"
@@ -157,6 +184,7 @@ function TestSuiteTreeItem({ suite, level, selectedId, onSelect }: TestSuiteTree
             </div>
           </div>
         </button>
+        </div>
       </div>
 
       {/* 子スイート（再帰的に表示） */}
@@ -168,6 +196,8 @@ function TestSuiteTreeItem({ suite, level, selectedId, onSelect }: TestSuiteTree
               suite={childSuite}
               level={level + 1}
               selectedId={selectedId}
+              expandedIds={expandedIds}
+              onToggleExpand={onToggleExpand}
               onSelect={onSelect}
             />
           ))}
