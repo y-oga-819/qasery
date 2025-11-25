@@ -29,12 +29,30 @@ use presentation::commands::{
 };
 
 fn main() {
-    // アプリケーション状態を初期化
-    let app_state = AppState::new("qasery.db").expect("Failed to initialize AppState");
-
     tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
-        .manage(app_state) // AppStateをTauriに登録
+        .setup(|app| {
+            // アプリのデータディレクトリを取得
+            let app_data_dir = app
+                .path()
+                .app_data_dir()
+                .expect("Failed to get app data dir");
+
+            // ディレクトリが存在しない場合は作成
+            std::fs::create_dir_all(&app_data_dir).expect("Failed to create app data dir");
+
+            // データベースファイルのパスを構築
+            let db_path = app_data_dir.join("qasery.db");
+            let db_path_str = db_path
+                .to_str()
+                .expect("Failed to convert db path to string");
+
+            // アプリケーション状態を初期化
+            let app_state = AppState::new(db_path_str).expect("Failed to initialize AppState");
+            app.manage(app_state);
+
+            Ok(())
+        })
         .invoke_handler(tauri::generate_handler![
             // プロジェクト関連コマンド
             list_projects, // Query
